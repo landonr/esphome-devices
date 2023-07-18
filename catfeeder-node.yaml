@@ -1,0 +1,390 @@
+esphome:
+  name: catfeeder-node
+  friendly_name: catfeeder-node
+  on_boot:
+    priority: 600
+    then:
+      - binary_sensor.template.publish:
+          id: skip_next_meal
+          state: Off
+
+esp32:
+  board: nodemcu-32s
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  services:
+    - service: feed_cat
+      then:
+        - button.press: feed_single_internal
+
+web_server:
+  port: 80
+
+ota:
+  password: "c77a50f9d929caf56146ed0e31b0d93b"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Catfeeder-Node Fallback Hotspot"
+    password: "ivU9AzL8H1pF"
+
+captive_portal:
+  
+ 
+output:
+  - platform: ledc
+    pin: GPIO2
+    frequency: 1000 Hz
+    id: pwm_output
+  - platform: ledc
+    pin: GPIO5
+    frequency: 1000 Hz
+    id: pwm_output2
+  - platform: ledc
+    pin: GPIO4
+    frequency: 1000 Hz
+    id: motor_enable
+
+fan:
+  - platform: hbridge
+    id: my_fan
+    name: "Cat Feeder"
+    pin_a: pwm_output
+    pin_b: pwm_output2
+    enable_pin: motor_enable
+    # decay_mode: slow
+    internal: True
+    restore_mode: ALWAYS_OFF 
+    on_turn_on:
+      - fan.turn_on: 
+          id: my_fan
+          speed: 1
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO21
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    id: feed_clicker
+    name: "Feed Clicker"
+    internal: True
+  - platform: template
+    name: "Feeding"
+    internal: True
+    id: feeding_active
+  - platform: template
+    name: "Skip Next Meal"
+    id: skip_next_meal
+
+
+number:
+  - platform: template
+    name: "Grams per day"
+    id: grams_per_day
+    optimistic: true
+    min_value: 100
+    max_value: 150
+    restore_value: True
+    initial_value: 115
+    step: 5
+    device_class: "weight"
+  - platform: template
+    name: "Grams per serving"
+    id: grams_per_serving
+    optimistic: true
+    min_value: 5
+    max_value: 20
+    restore_value: True
+    initial_value: 7
+    step: 0.1
+    device_class: "weight"
+  # - platform: template
+  #   name: "Meal servings"
+  #   id: servings
+  #   optimistic: true
+  #   min_value: 0
+  #   max_value: 10
+  #   restore_value: True
+  #   initial_value: 4
+  #   step: 1
+  - platform: template
+    name: "Servings today"
+    id: servings_today
+    optimistic: true
+    min_value: 0
+    max_value: 100
+    restore_value: True
+    initial_value: 0
+    step: 1
+    internal: true
+    on_value:
+      then:
+      - sensor.template.publish:
+          id: servings_today_sensor
+          state: !lambda 'return x;'
+  - platform: template
+    name: "Servings since refill"
+    id: servings_since_refill
+    optimistic: true
+    min_value: 0
+    max_value: 1000
+    restore_value: True
+    initial_value: 0
+    step: 1
+    internal: true
+    on_value:
+      then:
+      - sensor.template.publish:
+          id: servings_since_refill_sensor
+          state: !lambda 'return x;'
+  - platform: template
+    name: "Servings total"
+    id: servings_total
+    optimistic: true
+    min_value: 0
+    max_value: 1000000
+    restore_value: True
+    initial_value: 0
+    step: 1
+    internal: true
+    on_value:
+      then:
+      - sensor.template.publish:
+          id: servings_total_sensor
+          state: !lambda 'return x;'
+  - platform: template
+    name: "Active servings"
+    id: active_servings
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    step: 1
+    internal: true
+  - platform: template
+    name: "Bonus treats internal"
+    id: bonus_treats_internal
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    restore_value: True
+    step: 1
+    internal: true
+
+button:
+  - platform: template
+    name: Reset skip
+    on_press:
+      then:
+        - binary_sensor.template.publish:
+            id: skip_next_meal
+            state: Off
+  - platform: template
+    name: Refill
+    internal: False
+    id: refill
+    on_press:
+      then:
+      - number.to_min: servings_since_refill
+  - platform: template
+    name: Feed Single
+    id: feed_single
+    on_press:
+      then:
+      - button.press: feed_single_internal
+      - number.increment: bonus_treats_internal
+  - platform: template
+    name: Feed Meal
+    id: feed_meal
+    on_press:
+      then:
+      - button.press: feed_meal_internal
+      - binary_sensor.template.publish:
+          id: skip_next_meal
+          state: On
+  - platform: template
+    name: Feed Meal Internal
+    internal: True
+    id: feed_meal_internal
+    on_press:
+      then:
+      - if:
+          condition:
+            binary_sensor.is_off: skip_next_meal
+          then:
+          - while:
+              condition:
+                lambda: |-
+                  return id(active_servings).state < id(servings).state;
+              then:
+                - binary_sensor.template.publish:
+                    id: feeding_active
+                    state: ON
+                - button.press: feed_single_internal
+                - wait_until:
+                    binary_sensor.is_off: feeding_active
+                - number.increment: active_servings
+          - number.to_min: active_servings
+          else:
+          - binary_sensor.template.publish:
+              id: skip_next_meal
+              state: OFF
+  - platform: template
+    name: Feed Single
+    internal: True
+    id: feed_single_internal
+    on_press:
+      then:
+      - binary_sensor.template.publish:
+          id: feeding_active
+          state: ON
+      - fan.turn_on: 
+          id: my_fan
+          speed: 1
+      - if:
+          condition:
+            binary_sensor.is_on: feed_clicker
+          then:
+          - wait_until:
+              binary_sensor.is_off: feed_clicker
+          - wait_until:
+              binary_sensor.is_on: feed_clicker
+          - wait_until:
+              binary_sensor.is_off: feed_clicker
+          - fan.turn_off: my_fan
+          else:
+          - wait_until:
+              binary_sensor.is_on: feed_clicker
+          - wait_until:
+              binary_sensor.is_off: feed_clicker
+          - fan.turn_off: my_fan
+      - number.increment: servings_today
+      - number.increment: servings_since_refill
+      - number.increment: servings_total
+      - text_sensor.template.publish:
+          id: last_feed
+          state: !lambda |-
+            auto timeSting = id(sntp_time).now().strftime("%c");
+            return timeSting;
+      - binary_sensor.template.publish:
+          id: feeding_active
+          state: OFF
+
+
+time:
+  - platform: sntp
+    id: sntp_time
+    on_time:
+      # Every morning on weekdays
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - number.to_min: servings_today
+          - number.to_min: bonus_treats_internal
+  - platform: sntp
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 4
+        then:
+          - button.press: feed_meal_internal
+  - platform: sntp
+    on_time:
+      - seconds: 0
+        minutes: 45
+        hours: 8
+        then:
+          - button.press: feed_meal_internal
+  - platform: sntp
+    on_time:
+      - seconds: 0
+        minutes: 30
+        hours: 19
+        then:
+          - button.press: feed_meal_internal
+
+text_sensor:
+  - platform: template
+    name: "Last feed"
+    id: last_feed
+  - platform: template
+    name: "Feed schedule"
+    lambda: !lambda |-
+      return {"04:00, 09:00, 19:00"};
+  - platform: template
+    name: "Next feed"
+    lambda: !lambda |-
+      int number = id(sntp_time).now().hour;
+      std::vector<int> ordered_list = {4, 9, 19};
+      bool skip_next_higher = id(skip_next_meal).state;
+
+      int next_highest = -1;
+      int next_next_highest = -1;
+
+      for (int value : ordered_list) {
+          if (value > number) {
+              if (skip_next_higher) {
+                  if (next_highest == -1) {
+                      next_highest = value;
+                  } else {
+                      next_next_highest = value;
+                      break;
+                  }
+              } else {
+                  next_highest = value;
+                  break;
+              }
+          }
+      }
+      int hour = skip_next_higher ? next_next_highest : next_highest;
+      std::string period = (hour >= 12) ? "PM" : "AM";
+      int hour12 = (hour > 12) ? hour - 12 : hour;
+      if (hour12 == 0) {
+          hour12 = 12;
+      }
+      return std::to_string(hour12) + ":00 " + period;
+sensor:
+  - platform: template
+    name: "Servings per day (calculated)"
+    id: servings_per_day
+    state_class: "measurement"
+    lambda: !lambda |-
+      return id(grams_per_day).state / id(grams_per_serving).state;
+  - platform: template
+    name: "Spins per serving (calculated)"
+    id: servings
+    state_class: "measurement"
+    lambda: !lambda |-
+      float feed_count = 3;
+      return floor(id(servings_per_day).state / feed_count);
+  - platform: template
+    name: "Servings today"
+    id: servings_today_sensor
+    state_class: "total_increasing"
+  - platform: template
+    id: servings_total_sensor
+    name: "Servings total"
+    state_class: "total"
+  - platform: template
+    id: servings_since_refill_sensor
+    name: "Servings Since Refill"
+    state_class: "total_increasing"
+  - platform: template
+    name: "Bonus treats today"
+    id: bonus_treats
+    state_class: "measurement"
+    lambda: !lambda |-
+      return id(bonus_treats_internal).state;

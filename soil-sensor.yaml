@@ -1,0 +1,119 @@
+esphome:
+  name: soil-sensor
+
+esp32:
+  board: nodemcu-32s
+
+# Enable logging
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+
+ota:
+  password: "3f0fac484feca10926477ce3d775d572"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Soil-Sensor Fallback Hotspot"
+    password: "ekZ0fZPlIvcm"
+
+captive_portal:
+
+web_server:
+  port: 80
+
+esp32_ble_tracker:
+
+bluetooth_proxy:
+
+output:
+  - platform: gpio
+    pin: 12
+    id: plant1Output
+  - platform: gpio
+    pin: 14
+    id: plant2Output
+  - platform: gpio
+    pin: 13
+    id: plant3Output
+
+
+# Dry 0.7 - taken from in the air, probably should do it directly in dry soil
+# Wet 0.264 - taken from in a glass of water, probably should do it directly in saturated soil
+sensor:
+# This is the actual reading of the various sensors
+  - platform: adc 
+    pin: A0
+    id: voltage
+    attenuation: 11db
+    update_interval: 0.1s
+    internal: true # Don't expose this sensor to HA, the template sensors will do that
+    accuracy_decimals: 1
+    filters:
+      - sliding_window_moving_average: # averages the last 10 results, probably overkill
+          window_size: 10
+          send_every: 10
+    on_value:
+      then:
+       lambda: |-
+          double max = 2.58;
+          double min = 1.85;
+          if (x > max) {
+            id(moisture).publish_state(0);
+          } else if (x < min) {
+            id(moisture).publish_state(100);
+          } else {
+            id(moisture).publish_state((max-x) / (max-min) * 100.0); 	// use a linear fit for any values in between
+          }
+  - platform: template
+    id: moisture
+# actual sensors reported to Home Assistant, pull the value from the internal ADC sensor
+  - platform: template
+    name: "Plant 1 Soil Saturation"
+    id: plant1
+    unit_of_measurement: "% Saturation"
+    icon: "mdi:water-percent"
+    update_interval: never
+    accuracy_decimals: 0
+    lambda: |-
+      return id(moisture).state;
+  - platform: template
+    name: "Plant 2 Soil Saturation"
+    id: plant2
+    unit_of_measurement: "% Saturation"
+    icon: "mdi:water-percent"
+    update_interval: never
+    accuracy_decimals: 0
+    lambda: |-
+      return id(moisture).state;
+  - platform: template
+    name: "Plant 3 Soil Saturation"
+    id: plant3
+    unit_of_measurement: "% Saturation"
+    icon: "mdi:water-percent"
+    update_interval: never
+    accuracy_decimals: 0
+    lambda: |-
+      return id(moisture).state;
+# This is the code that runs over and over again turning on the correct sensors then updating the template sensors
+interval:
+  - interval: 60s # if you add more outputs, increase this time as appropriate
+    then:
+      - output.turn_on: plant1Output # turn on sensor 1
+      - delay: 5s # let sensor 1's reading settle
+      - component.update: plant1 # update sensor 1's reading in HA
+      - output.turn_off: plant1Output # stop powering sensor 1
+      - output.turn_on: plant2Output # turn on sensor 2
+      - delay: 5s # let sensor 2's reading settle
+      - component.update: plant2 # update sensor 2's reading in HA
+      - output.turn_off: plant2Output # stop powering sensor 2
+      - output.turn_on: plant3Output # turn on sensor 3
+      - delay: 5s # let sensor 3's reading settle
+      - component.update: plant3 # update sensor 3's reading in HA
+      - output.turn_off: plant3Output # stop powering sensor 2
