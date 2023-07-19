@@ -54,7 +54,7 @@ packages:
   ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
   ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
-  home_media_player: !include homeConfig/media_player.yaml
+  # home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -92,7 +92,7 @@ homeThing:
   battery:
     battery_percent: battery_percent
     charging: charging
-  media_player_group: media_group_component
+  # media_player_group: media_group_component
   display: my_display
   on_redraw:
     then:
@@ -107,7 +107,26 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    launch_image: launch_image
+    font_logo: home_thing_logo
+  home_screen:
+    name: root
+    entities:
+    - id: light_all_lights
+      type: light
+    - type: command
+      name: "desk nudge up"
+      command:
+        - homeassistant.service:
+            service: button.press
+            data:
+              entity_id: "button.desk_position_nudge_up"
+    - type: command
+      name: "desk nudge down"
+      command:
+        - homeassistant.service:
+            service: button.press
+            data:
+              entity_id: "button.desk_position_nudge_down"
   screens:
     - name: Plants Screen
       entities:
