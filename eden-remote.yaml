@@ -1,5 +1,7 @@
 esphome:
-  name: m5stickcplus
+  name: eden_remote
+  platform: ESP32
+  board: featheresp32
   on_boot:
     priority: 600.0
     then:
@@ -10,11 +12,6 @@ esphome:
               - wifi.connected:
           then:
             - switch.turn_on: sleep_toggle
-
-esp32:
-  board: m5stick-c
-  framework:
-    type: arduino
 
 wifi:
   ssid: !secret wifi_ssid
@@ -27,77 +24,64 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [adc, i2s_audio, microphone]
-  - source:
-      type: git
-      url: https://gitlab.com/geiseri/esphome_extras.git
-    refresh: 0s
-    components: [axp192]
-  - source:
     #   type: git
     #   url: https://github.com/landonr/homeThing
     #   ref: main
+    # refresh: 0s
       type: local
       path: ../homeThing/components
-    refresh: 0s
     components: [homeThing]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/esphome-components
-    #   ref: main
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
     refresh: 0s
+      # type: local
+      # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
       media_player_source,
       media_player_source_sonos,
       media_player_source_spotify,
-      media_player_source_custom,
-      MiniEncoderC
+      media_player_source_custom
     ]
-
 
 packages:
   device_base: !include ../homeThing/common/device_base.yaml
-  home_media_player: !include homeConfig/media_player_light.yaml
+  ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
+  ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
+  ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
+  ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
+  ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
+  home_media_player: !include homeConfig/media_player.yaml
   home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # images: !include ../homeThing/common/images.yaml
-  axp192: !include ../homeThing/common/m5stack-stickc/axp192.yaml # power management and screen backlight
-  sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
-  binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
-  mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
-  friendly_name: "homeThingM5StickPlus"
+  friendly_name: "Eden's Remote"
 
 spi:
-  clk_pin: GPIO13
-  mosi_pin: GPIO15
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
 
 homeThing:
   id: homeThingMenu
-  settings:
-    mode: 3_button
   sleep_switch: sleep_toggle
   backlight: backlight
-  # battery:
-  #   battery_percent: battery_percent
-  #   charging: axp_charger
+  battery:
+    battery_percent: battery_percent
+    charging: charging
   media_player_group: media_group_component
   display: my_display
   on_redraw:
     then:
       component.update: my_display
   display_state:
+    draw_battery_level: true
     font_small: small_font
     font_medium: medium_font
     font_large: large_font
@@ -105,35 +89,17 @@ homeThing:
     font_material_large: material_font_large
     font_material_small: material_font_small
     font_logo: home_thing_logo
-    draw_now_playing_bottom_menu: True
 
 display:
   - platform: st7789v
     model: TTGO_TDisplay_135x240
     id: my_display
     cs_pin: GPIO5
-    dc_pin: GPIO23
-    reset_pin: GPIO18
-    rotation: 0
-    update_interval: 3600s
+    dc_pin: GPIO16
+    reset_pin: GPIO23
+    rotation: 90
+    update_interval: 10s
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
 
-remote_receiver:
-  pin: GPIO32
-  dump: all
-
-i2s_audio:
-  id: bus_i2s
-  i2s_lrclk_pin: G26
-  i2s_bclk_pin: G0
-microphone:
-  - platform: i2s_audio
-    i2s_din_pin: GPIO34
-    i2s_audio_id: bus_i2s
-    adc_type: external
-    pdm: true
-    id: mic
-voice_assistant:
-  microphone: mic

@@ -83,7 +83,7 @@ substitutions:
   screen_left_pin: "GPIO0"
   screen_right_pin: "GPIO14"
   battery_pin: "4"
-  log_level: "INFO"
+  log_level: "WARN"
 
 remote_transmitter:
   pin: GPIO21
@@ -166,6 +166,13 @@ homeThing:
               times: 5
               wait_time: 10ms
             data: "0000 006D 0022 0000 0145 009D 0017 0011 0018 0011 0018 0011 0018 0011 0017 0011 0018 0011 0018 0011 0018 0011 0017 0037 0018 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0011 0017 0011 0017 0037 0017 0037 0017 0011 0017 0011 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0037 0018 0036 0019 06C3"
+      - type: command
+        name: "feed lil freak"
+        command:
+          - homeassistant.service:
+              service: button.press
+              data:
+                entity_id: "button.catfeeder_node_feed_single"
   screens:
     - name: Desk Screen
       entities:
@@ -177,14 +184,14 @@ homeThing:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.mega_homething_desk_position_nudge_up"
+                  entity_id: "button.desk_position_nudge_down"
         - type: command
           name: "desk nudge down"
           command:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.mega_homething_desk_position_nudge_down"
+                  entity_id: "button.desk_position_nudge_down"
         - id: light_desk_lamp
           type: light
     - name: Lights Screen
@@ -215,7 +222,7 @@ homeThing:
       entities:
         - id: backlight
           type: light
-        - id: "restart_switch"
+        - id: restart_switch
           type: switch
         - id: wifi_ssid
           type: text_sensor

@@ -52,7 +52,7 @@ external_components:
   
 packages:
   device_base: !include ../homeThing/common/device_base.yaml
-  settings: !include ../homeThing/common/settings.yaml
+  # settings: !include ../homeThing/common/settings.yaml
   ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ip  od_battery.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
@@ -63,6 +63,11 @@ packages:
   fonts: !include ../homeThing/common/fonts-light.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   debug: !include ../homeThing/common/debugging.yaml
+
+switch:
+  - platform: restart
+    id: restart_switch
+    name: "${friendly_name} Restart"
 
 media_player_source_sonos:
   id: sonos
@@ -141,6 +146,8 @@ homeThing:
                 service: button.press
                 data:
                   entity_id: "button.catfeeder_node_feed_single"
+        - id: restart_switch
+          type: switch
   screens:
     - name: Desk Screen
       entities:
@@ -333,6 +340,7 @@ button:
       then:
         - uart.write: '<C0,0.'
   - platform: template
+    internal: False
     name: "Desk position nudge up"
     on_press:
       then:
