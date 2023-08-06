@@ -64,11 +64,12 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
+  # images: !include ../homeThing/common/images.yaml
   ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
   ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
   ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
+  s3_backlight: !include ../homeThing/common/tdisplay-s3/backlight.yaml
 
 substitutions:
   friendly_name: "s3 homething"
@@ -82,12 +83,7 @@ substitutions:
   screen_left_pin: "GPIO0"
   screen_right_pin: "GPIO14"
   battery_pin: "4"
-
-output:
-  - platform: ledc
-    pin: GPIO38
-    id: gpio38
-    frequency: 2000
+  log_level: "INFO"
 
 remote_transmitter:
   pin: GPIO21
@@ -95,11 +91,6 @@ remote_transmitter:
   carrier_duty_percent: 50%
 
 light:
-  - platform: monochromatic
-    output: gpio38
-    name: "Backlight"
-    id: backlight
-    restore_mode: RESTORE_DEFAULT_ON
   - platform: homeassistant_component
     id: light_desk_lamp
     entity_id: light.desk_lamp
@@ -128,14 +119,6 @@ cover:
     name: "Megadesk"
     id: cover_megadesk
 
-switch:
-  - platform: gpio
-    pin: GPIO15
-    name: "BacklightBattery"
-    id: backlightBattery
-    internal: true
-    restore_mode: ALWAYS_ON   
-
 homeThing:
   id: homeThingMenu
   settings:
@@ -161,26 +144,31 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    launch_image: launch_image
+    font_logo: home_thing_logo
+  home_screen:
+    name: root
+    entities:
+      - id: light_all_lights
+        type: light
+      - type: command
+        name: "cat toy forward"
+        command:
+        - remote_transmitter.transmit_pronto:
+            repeat:
+              times: 5
+              wait_time: 10ms
+            data: "0000 006D 0022 0000 0143 00A0 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 06C3"
+      - type: command
+        name: "cat toy back"
+        command:
+        - remote_transmitter.transmit_pronto:
+            repeat:
+              times: 5
+              wait_time: 10ms
+            data: "0000 006D 0022 0000 0145 009D 0017 0011 0018 0011 0018 0011 0018 0011 0017 0011 0018 0011 0018 0011 0018 0011 0017 0037 0018 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0011 0017 0011 0017 0037 0017 0037 0017 0011 0017 0011 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0037 0018 0036 0019 06C3"
   screens:
     - name: Desk Screen
       entities:
-        - type: command
-          name: "cat toy forward"
-          command:
-          - remote_transmitter.transmit_pronto:
-              repeat:
-                times: 5
-                wait_time: 10ms
-              data: "0000 006D 0022 0000 0143 00A0 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 0014 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 003A 0015 06C3"
-        - type: command
-          name: "cat toy back"
-          command:
-          - remote_transmitter.transmit_pronto:
-              repeat:
-                times: 5
-                wait_time: 10ms
-              data: "0000 006D 0022 0000 0145 009D 0017 0011 0018 0011 0018 0011 0018 0011 0017 0011 0018 0011 0018 0011 0018 0011 0017 0037 0018 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0011 0017 0011 0017 0037 0017 0037 0017 0011 0017 0011 0017 0037 0017 0037 0017 0037 0017 0037 0017 0011 0018 0011 0017 0037 0018 0036 0019 06C3"
         - type: cover
           id: cover_megadesk
         - type: command

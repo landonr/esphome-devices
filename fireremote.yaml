@@ -65,7 +65,7 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
+  # images: !include ../homeThing/common/images.yaml
   settings: !include ../homeThing/common/settings.yaml
 
 substitutions:
@@ -230,7 +230,7 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    launch_image: launch_image
+    font_logo: home_thing_logo
     header_height: 24
     margin_size: 8
     slider_margin_size: 6

@@ -84,9 +84,9 @@ media_player:
 
 color:
   - id: my_primary_accent
-    red_int: 220
-    green_int: 100
-    blue_int: 10
+    red_int: 230
+    green_int: 90
+    blue_int: 2
 
 light:
   - platform: homeassistant_component
@@ -125,6 +125,22 @@ homeThing:
     font_material_large: material_font_large
     font_material_small: material_font_small
     font_logo: home_thing_logo
+  home_screen:
+    name: root
+    entities:
+        - type: number
+          id: megadesk_height
+        - type: button
+          id: desk_position_up
+        - type: button
+          id: desk_position_down
+        - type: command
+          name: "feed lil freak"
+          command:
+            - homeassistant.service:
+                service: button.press
+                data:
+                  entity_id: "button.catfeeder_node_feed_single"
   screens:
     - name: Desk Screen
       entities:
