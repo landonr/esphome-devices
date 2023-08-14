@@ -45,6 +45,16 @@ external_components:
       media_player_source_spotify,
       media_player_source_custom
     ]
+  - source:
+    #   type: git
+    #   url: https://github.com/landonr/esphome-components
+    #   ref: main
+    # refresh: 0s
+      type: local
+      path: ../compile-online-image/esphome/components
+    components: [
+      image
+    ]
 
 packages:
   device_base: !include ../homeThing/common/device_base.yaml
@@ -58,8 +68,13 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts-light.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
   debug: !include ../homeThing/common/debugging.yaml
+
+image:
+  - id: launch_image
+    file: https://raw.githubusercontent.com/landonr/homeThing/main/docs/homeThing%20logo.svg
+    resize: 48x48
+    type: TRANSPARENT_BINARY
 
 substitutions:
   friendly_name: "white homething"
@@ -102,7 +117,7 @@ homeThing:
     font_large_heavy: large_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    launch_image: launch_image
+    # launch_image: launch_image
   screens:
     - name: Desk Screen
       entities:
