@@ -88,7 +88,7 @@ packages:
   # axp192: !include ../homeThing/common/m5stack-stickc/axp192-geiseri.yaml # power management and screen backlight
   axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
   sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
-  binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
+  # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
@@ -194,19 +194,20 @@ display:
 #   pin: GPIO32
 #   dump: all
 
-# i2s_audio:
-#   id: bus_i2s
-#   i2s_lrclk_pin: G26
-#   i2s_bclk_pin: G0
-# microphone:
-#   - platform: i2s_audio
-#     i2s_din_pin: GPIO34
-#     i2s_audio_id: bus_i2s
-#     adc_type: external
-#     pdm: true
-#     id: mic
-# voice_assistant:
-#   microphone: mic
+i2s_audio:
+  id: bus_i2s
+  i2s_lrclk_pin: G0
+  i2s_bclk_pin: G26
+microphone:
+  - platform: i2s_audio
+    i2s_din_pin: GPIO34
+    i2s_audio_id: bus_i2s
+    adc_type: external
+    pdm: true
+    id: mic
+voice_assistant:
+  microphone: mic
+  id: voice_assist
 
 # pcf8574:
 #   - id: 'pcf8574_hub'
@@ -228,3 +229,47 @@ switch:
   - platform: restart
     id: restart_switch
     name: "${friendly_name} Restart"
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO37
+      inverted: true
+    name: Button A
+    on_multi_click:
+      # - timing:
+      #     - ON FOR AT MOST 350ms
+      #     - OFF FOR AT LEAST 10ms
+      #   then:
+      #     - lambda: |-
+      #         id(homeThingMenu)->buttonPressWakeUpDisplay();
+      #         id(led1).turn_on().set_transition_length(0).perform();
+      - timing:
+          - ON FOR AT LEAST 350ms
+        then:
+          - light.turn_on:
+              id: led1
+              transition_length: 0s
+          - voice_assistant.start:
+      - timing:
+          - ON FOR AT LEAST 350ms
+          - OFF FOR AT LEAST 10ms
+        then:
+          - light.turn_off:
+              id: led1
+              transition_length: 0s
+          - voice_assistant.stop:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: Button B
+    on_press:
+      then:
+        lambda: |-
+          id(homeThingMenu)->buttonPressWakeUpDisplay();
+          id(homeThingMenu)->topMenu(); 
+          id(led1).turn_on().set_transition_length(0).perform();
+    on_release:
+      then:
+        - light.turn_off: led1
