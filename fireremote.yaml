@@ -23,6 +23,19 @@ wifi:
     password: !secret wifi_fallback_password
 
 external_components:
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source:
+    #   type: git
+    #   url: https://github.com/landonr/esphome-components
+    #   ref: main
+    # refresh: 0s
+      type: local
+      path: ../compile-online-image/esphome/components
+    components: [
+      font,
+      external_files
+    ]
   - source:
       type: git
       url: https://github.com/ssieb/custom_components
@@ -60,12 +73,11 @@ external_components:
 packages:
   device_base: !include ../homeThing/common/device_base.yaml
   home_media_player: !include homeConfig/media_player.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
-  home_light: !include homeConfig/light.yaml
-  home_switch: !include homeConfig/switch.yaml
+  # home_text_sensor: !include homeConfig/text_sensor.yaml
+  # home_light: !include homeConfig/light.yaml
+  # home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # images: !include ../homeThing/common/images.yaml
   settings: !include ../homeThing/common/settings.yaml
 
 substitutions:
@@ -77,6 +89,12 @@ substitutions:
   home_thing_logo_size: "64"
   material_font_large_size: "28"
   material_font_small_size: "24"
+
+image:
+  id: launch_image
+  file: "https://freight.cargo.site/t/original/i/308ed48f0158d70c80936f04220682e366c6c4876327347eab482bdecc470bce/bean.png"
+  resize: 64x64
+  type: RGBA
 
 i2c:
   - id: bus_a
@@ -154,14 +172,14 @@ binary_sensor:
     pin:
       number: 37
       inverted: true
-    on_press:
-      - voice_assistant.start:
-    on_release:
-      - voice_assistant.stop:
-    # on_click:
-    #   then:
-    #     - lambda: |-
-    #         id(homeThingMenu)->rotaryScrollClockwise(0);
+    # on_press:
+    #   - voice_assistant.start:
+    # on_release:
+    #   - voice_assistant.stop:
+    on_click:
+      then:
+        - lambda: |-
+            id(homeThingMenu)->rotaryScrollClockwise(0);
 
 # We can still control the backlight independently
 switch:
@@ -185,11 +203,11 @@ light:
     name: ${friendly_name} Backlight
     id: backlight
     restore_mode: ALWAYS_ON
-  - platform: fastled_clockless
-    chipset: SK6812
+  - platform: neopixelbus
+    variant: SK6812
     pin: GPIO15
     num_leds: 10
-    rgb_order: GRB
+    type: GRB
     id: side_light
     name: ${friendly_name} Remote Light
     restore_mode: ALWAYS_OFF
@@ -205,11 +223,45 @@ spi:
   mosi_pin: 23
   miso_pin: 19
 
-cover:
-  - platform: homeassistant_component
-    entity_id: "cover.megadesk_cover"
-    name: "Megadesk"
-    id: cover_megadesk
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_feed_schedule"
+    name: "Schedule"
+    id: sensor_schedule
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_last_feed"
+    name: "Last Meal"
+    id: sensor_last_meal
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_next_feed"
+    name: "Next meal"
+    id: sensor_next_meal
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_per_day"
+    name: "Servings per day"
+    id: sensor_servings_per_day
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_since_refill"
+    name: "Servings since refill"
+    id: sensor_servings_since_refill
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_total"
+    name: "Servings total"
+    id: sensor_servings_total
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_today"
+    name: "Servings today"
+    id: sensor_servings_today
+
+# number:
+#   - platform: homeassistant
+#     entity_id: "number.catfeeder_node_grams_per_day"
+#     name: "Servings per day"
+#     id: input_number_servings_per_day
+#   - platform: homeassistant
+#     entity_id: "number.catfeeder_node_grams_per_serving"
+#     name: "Servings per day"
+#     id: input_number_grams_per_serving
 
 homeThing:
   id: homeThingMenu
@@ -234,7 +286,7 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
     header_height: 24
     margin_size: 8
     slider_margin_size: 6
@@ -246,27 +298,38 @@ homeThing:
     dark_mode: true
     draw_volume_level: false
     draw_header_time: true
+  home_screen:
+    name: root
+    entities:
+        - type: command
+          name: "feed cat"
+          command:
+            - light.turn_on:
+                id: side_light
+                brightness: 100%
+                effect: "Rainbow Effect"
+            - homeassistant.service:
+                service: button.press
+                data:
+                  entity_id: "button.catfeeder_node_feed_single"
+            - delay: 3s
+            - light.turn_off:
+                id: side_light
+        - type: text_sensor
+          id: sensor_servings_today
+        - type: text_sensor
+          id: sensor_last_meal
+        - type: text_sensor
+          id: sensor_next_meal
+        - type: text_sensor
+          id: sensor_schedule
+        - type: text_sensor
+          id: sensor_servings_per_day
+        - type: text_sensor
+          id: sensor_servings_since_refill
+        - type: text_sensor
+          id: sensor_servings_total
   screens:
-    - name: Desk Screen
-      entities:
-        - type: cover
-          id: cover_megadesk
-        - type: command
-          name: "desk nudge up"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_up"
-        - type: command
-          name: "desk nudge down"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_down"
-        - id: light_desk_lamp
-          type: light
     - name: Settings Screen
       show_version: True
       entities:
@@ -274,7 +337,7 @@ homeThing:
           type: light
         - id: backlight
           type: light
-        - id: "restart_switch"
+        - id: restart_switch
           type: switch
         - id: wifi_ssid
           type: text_sensor
@@ -295,23 +358,23 @@ display:
       id(homeThingMenu)->draw_menu_screen();
       return;
 
-i2s_audio:
-  i2s_lrclk_pin: GPIO15
-  # i2s_bclk_pin: GPIO35
+# i2s_audio:
+#   i2s_lrclk_pin: GPIO15
+#   # i2s_bclk_pin: GPIO35
 
-microphone:
-  - platform: i2s_audio
-    id: adc_mic
-    adc_type: internal
-    adc_pin: GPIO34
+# microphone:
+#   - platform: i2s_audio
+#     id: adc_mic
+#     adc_type: internal
+#     adc_pin: GPIO34
 
-speaker:
-  - platform: i2s_audio
-    dac_type: internal
-    i2s_dout_pin: GPIO25
-    mode: right
-    id: speaker_id
+# speaker:
+#   - platform: i2s_audio
+#     dac_type: internal
+#     i2s_dout_pin: GPIO25
+#     mode: right
+#     id: speaker_id
 
-voice_assistant:
-  microphone: adc_mic
-  speaker: speaker_id
+# voice_assistant:
+#   microphone: adc_mic
+#   speaker: speaker_id

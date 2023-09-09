@@ -25,6 +25,19 @@ wifi:
     password: !secret wifi_fallback_password
 
 external_components:
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source:
+    #   type: git
+    #   url: https://github.com/landonr/esphome-components
+    #   ref: main
+    # refresh: 0s
+      type: local
+      path: ../compile-online-image/esphome/components
+    components: [
+      font,
+      external_files
+    ]
   - source:
     #   type: git
     #   url: https://github.com/landonr/homeThing

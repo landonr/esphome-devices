@@ -22,6 +22,19 @@ wifi:
   power_save_mode: HIGH
 
 external_components:
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source:
+    #   type: git
+    #   url: https://github.com/landonr/esphome-components
+    #   ref: main
+    # refresh: 0s
+      type: local
+      path: ../compile-online-image/esphome/components
+    components: [
+      font,
+      external_files
+    ]
   - source:
     #   type: git
     #   url: https://github.com/landonr/homeThing
@@ -56,10 +69,10 @@ packages:
   ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
   home_media_player: !include homeConfig/media_player_light.yaml
   home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts-light.yaml
+  fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
   debug: !include ../homeThing/common/debugging.yaml
+  images: !include ../homeThing/common/images.yaml
 
 substitutions:
   friendly_name: "white homething"
@@ -74,12 +87,13 @@ light:
   - platform: homeassistant_component
     id: light_rgb_lights
     entity_id: light.rgb_lights
-    name: Color Lights 
+    name: Color Lights
 
 homeThing:
   id: homeThingMenu
   settings:
     sleep_after: 14400
+    display_timeout_while_charging: 10
   sleep_switch: sleep_toggle
   backlight: backlight
   header:
@@ -103,6 +117,7 @@ homeThing:
     font_material_large: material_font_large
     font_material_small: material_font_small
     launch_image: launch_image
+    boot_device_name: "white homething"
   screens:
     - name: Desk Screen
       entities:
@@ -146,8 +161,8 @@ homeThing:
     - name: Settings Screen
       show_version: True
       entities:
-        - id: backlight
-          type: light
+        # - id: backlight
+        #   type: light
         - id: "restart_switch"
           type: switch
         - id: wifi_ssid
@@ -168,6 +183,7 @@ display:
     cs_pin: GPIO5
     dc_pin: GPIO16
     reset_pin: GPIO23
+    # backlight_pin: GPIO4
     rotation: 90
     update_interval: 10s
     lambda: |-

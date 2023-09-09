@@ -26,16 +26,30 @@ wifi:
     password: !secret wifi_fallback_password
 
 external_components:
-  - source:
-      type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [adc, i2s_audio, microphone]
-  - source:
-      type: git
-      url: https://gitlab.com/geiseri/esphome_extras.git
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
     refresh: 0s
-    components: [axp192]
+  - source: github://pr#5254 # used to load images on compile
+    refresh: 0s
+    components: [ font, external_files ]
+  # - source:
+  #     type: git
+  #     url: https://github.com/esphome/esphome
+  #     ref: dev
+  #   components: [adc, i2s_audio, microphone]
+  # - source:
+  #     type: git
+  #     url: https://gitlab.com/geiseri/esphome_extras.git
+  #   refresh: 0s
+  #   components: [axp192]
+  # - source: github://paulchilton/esphome-axp192
+  #   components: [axp192]
+  #   refresh: 0s
+  - source:
+      type: local
+      path: ../axp192/components
+    refresh: 0s
+    components: [ axp192 ]
   - source:
     #   type: git
     #   url: https://github.com/landonr/homeThing
@@ -64,14 +78,15 @@ external_components:
 
 packages:
   device_base: !include ../homeThing/common/device_base.yaml
-  home_media_player: !include homeConfig/media_player_light.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
-  home_light: !include homeConfig/light.yaml
-  home_switch: !include homeConfig/switch.yaml
+  # home_media_player: !include homeConfig/media_player_light.yaml
+  # home_text_sensor: !include homeConfig/text_sensor.yaml
+  # home_light: !include homeConfig/light.yaml
+  # home_switch: !include homeConfig/switch.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # images: !include ../homeThing/common/images.yaml
-  axp192: !include ../homeThing/common/m5stack-stickc/axp192.yaml # power management and screen backlight
+  images: !include ../homeThing/common/images.yaml
+  # axp192: !include ../homeThing/common/m5stack-stickc/axp192-geiseri.yaml # power management and screen backlight
+  axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
   sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
   binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
@@ -83,29 +98,84 @@ spi:
   clk_pin: GPIO13
   mosi_pin: GPIO15
 
+light:
+  - platform: homeassistant_component
+    entity_id: "light.cabinet"
+    name: "Plant Light"
+    id: cabinet_light
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.plant_ficus_soil_saturation"
+    name: "Ficus soil %"
+    id: ficus_soil_saturation
+  - platform: homeassistant
+    entity_id: "sensor.plant_dad_soil_saturation"
+    name: "Dad plant soil %"
+    id: dad_plant_moisture
+  - platform: homeassistant
+    entity_id: "sensor.plant_rubber_soil_saturation"
+    name: "Rubber plant soil %"
+    id: rubber_plant_moisture
+  - platform: homeassistant
+    entity_id: "sensor.plant_vine_soil_saturation"
+    name: "Vine plant soil %"
+    id: vine_plant_moisture
+
 homeThing:
   id: homeThingMenu
   settings:
-    mode: 3_button
+    mode: rotary
+    display_timeout_while_charging: 10
   sleep_switch: sleep_toggle
   backlight: backlight
-  # battery:
-  #   battery_percent: battery_percent
-  #   charging: axp_charger
-  media_player_group: media_group_component
+  header:
+    time_id: esptime
+  battery:
+    battery_percent: batteryPercent
+    charging: axp_charger
+  # media_player_group: media_group_component
   display: my_display
   on_redraw:
     then:
       component.update: my_display
   display_state:
+    draw_battery_level: true
     font_small: small_font
     font_medium: medium_font
     font_large: large_font
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
-    draw_now_playing_bottom_menu: True
+    launch_image: launch_image
+    boot_device_name: "plant thing"
+  home_screen:
+    name: root
+    entities:
+      - id: cabinet_light
+        type: light
+      - id: ficus_soil_saturation
+        type: text_sensor
+      - id: dad_plant_moisture
+        type: text_sensor
+      - id: rubber_plant_moisture
+        type: text_sensor
+      - id: vine_plant_moisture
+        type: text_sensor
+  screens:
+    - name: Settings Screen
+      show_version: True
+      entities:
+        - id: backlight
+          type: light
+        - id: restart_switch
+          type: switch
+        # - id: wifi_ssid
+        #   type: text_sensor
+        # - id: wifi_signal_percent
+        #   type: sensor
+        # - id: wifi_ip
+        #   type: text_sensor
 
 display:
   - platform: st7789v
@@ -114,26 +184,47 @@ display:
     cs_pin: GPIO5
     dc_pin: GPIO23
     reset_pin: GPIO18
-    rotation: 0
+    rotation: 270
     update_interval: 3600s
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
 
-remote_receiver:
-  pin: GPIO32
-  dump: all
+# remote_receiver:
+#   pin: GPIO32
+#   dump: all
 
-i2s_audio:
-  id: bus_i2s
-  i2s_lrclk_pin: G26
-  i2s_bclk_pin: G0
-microphone:
-  - platform: i2s_audio
-    i2s_din_pin: GPIO34
-    i2s_audio_id: bus_i2s
-    adc_type: external
-    pdm: true
-    id: mic
-voice_assistant:
-  microphone: mic
+# i2s_audio:
+#   id: bus_i2s
+#   i2s_lrclk_pin: G26
+#   i2s_bclk_pin: G0
+# microphone:
+#   - platform: i2s_audio
+#     i2s_din_pin: GPIO34
+#     i2s_audio_id: bus_i2s
+#     adc_type: external
+#     pdm: true
+#     id: mic
+# voice_assistant:
+#   microphone: mic
+
+# pcf8574:
+#   - id: 'pcf8574_hub'
+#     i2c_id: bus_b
+#     address: 0x20
+#     pcf8575: false
+
+# Individual outputs
+switch:
+  # - platform: gpio
+  #   name: "PCF8574 Pin #0"
+  #   id: ledpin
+  #   pin:
+  #     pcf8574: pcf8574_hub
+  #     number: 3
+  #     mode:
+  #       output: true
+  #     inverted: True
+  - platform: restart
+    id: restart_switch
+    name: "${friendly_name} Restart"

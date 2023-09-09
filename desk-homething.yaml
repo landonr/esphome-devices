@@ -28,8 +28,12 @@ substitutions:
   log_level: "WARN"
 
 external_components:
-  # - source: github://landonr/homeThing@lando/now-playing-commands
-  #   refresh: 0s
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+    refresh: 0s
+  - source: github://pr#5254 # used to load images on compile
+    refresh: 0s
+    components: [ font, external_files ]
   - source:
       type: local
       path: ../homeThing/components
@@ -63,14 +67,15 @@ packages:
   fonts: !include ../homeThing/common/fonts-light.yaml
   icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   debug: !include ../homeThing/common/debugging.yaml
+  # images: !include ../homeThing/common/images.yaml
 
 switch:
   - platform: restart
     id: restart_switch
     name: "${friendly_name} Restart"
 
-media_player_source_sonos:
-  id: sonos
+# media_player_source_sonos:
+#   id: sonos
 
 media_player:
   - platform: homeassistant_media_player
@@ -78,9 +83,9 @@ media_player:
     entity_id: "media_player.beam"
     id: media_player_beam
     type: speaker
-    sources:
-      - id: sonos
-        type: sonos
+    # sources:
+    #   - id: sonos
+    #     type: sonos
     commands:
       name: "group all"
       command:
@@ -98,6 +103,12 @@ light:
     id: light_desk_lamp
     entity_id: light.desk_lamp
     name: Desk Lamp
+
+image:
+  id: launch_image
+  file: "https://freight.cargo.site/t/original/i/308ed48f0158d70c80936f04220682e366c6c4876327347eab482bdecc470bce/bean.png"
+  resize: 50x50
+  type: RGBA
 
 homeassistant_media_player:
   id: media_group_component
@@ -129,7 +140,7 @@ homeThing:
     font_large_heavy: large_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
   home_screen:
     name: root
     entities:
@@ -199,7 +210,7 @@ display:
     dc_pin: GPIO16
     reset_pin: GPIO23
     rotation: 90
-    update_interval: 10s
+    update_interval: 60s
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
