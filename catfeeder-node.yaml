@@ -4,9 +4,12 @@ esphome:
   on_boot:
     priority: 600
     then:
-      - binary_sensor.template.publish:
+      - switch.template.publish:
           id: skip_next_meal
           state: Off
+      - sensor.template.publish:
+          id: feeding_active_public
+          state: 0
 
 esp32:
   board: nodemcu-32s
@@ -15,6 +18,7 @@ esp32:
 
 # Enable logging
 logger:
+  level: INFO
 
 # Enable Home Assistant API
 api:
@@ -85,10 +89,25 @@ binary_sensor:
     name: "Feeding"
     internal: True
     id: feeding_active
+    on_state:
+      then:
+      - sensor.template.publish:
+          id: feeding_active_public
+          state: !lambda 'return x;'
+
+switch:
+  - platform: restart
+    name: "Cat Feeder Restart"
   - platform: template
     name: "Skip Next Meal"
     id: skip_next_meal
-
+    optimistic: True
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    name: "Calculate servings by refill"
+    id: calculate_by_refill
+    optimistic: True
+    restore_mode: RESTORE_DEFAULT_OFF
 
 number:
   - platform: template
@@ -111,15 +130,37 @@ number:
     initial_value: 7
     step: 0.1
     device_class: "weight"
-  # - platform: template
-  #   name: "Meal servings"
-  #   id: servings
-  #   optimistic: true
-  #   min_value: 0
-  #   max_value: 10
-  #   restore_value: True
-  #   initial_value: 4
-  #   step: 1
+  - platform: template
+    name: "Refill size"
+    id: refill_size
+    optimistic: true
+    min_value: 0
+    max_value: 4000
+    restore_value: False
+    initial_value: 0
+    step: 10
+    device_class: "weight"
+  - platform: template
+    name: "Grams per serving (Calculated)"
+    id: grams_per_serving_calculated
+    optimistic: true
+    internal: True
+    min_value: 0
+    max_value: 100
+    restore_value: True
+    initial_value: 0
+    step: 0.1
+    device_class: "weight"
+  - platform: template
+    name: "Last Refill size"
+    id: last_refill_size
+    optimistic: true
+    internal: True
+    min_value: 0
+    max_value: 4000
+    restore_value: True
+    step: 10
+    device_class: "weight"
   - platform: template
     name: "Servings today"
     id: servings_today
@@ -144,7 +185,7 @@ number:
     restore_value: True
     initial_value: 0
     step: 1
-    internal: true
+    internal: True
     on_value:
       then:
       - sensor.template.publish:
@@ -185,19 +226,34 @@ number:
 
 button:
   - platform: template
-    name: Reset skip
+    name: Reset Refill
     on_press:
       then:
-        - binary_sensor.template.publish:
-            id: skip_next_meal
-            state: Off
+        - number.set:
+            id: last_refill_size
+            value: 0
+        - number.set:
+            id: refill_size
+            value: 0
+        - number.set:
+            id: grams_per_serving_calculated
+            value: 0
   - platform: template
-    name: Refill
-    internal: False
-    id: refill
+    name: Save Refill
     on_press:
-      then:
-      - number.to_min: servings_since_refill
+      - if:
+          condition:
+            lambda: 'return id(servings_since_refill).state > 0;'
+          then:
+            - number.set:
+                id: last_refill_size
+                value: !lambda 'return id(refill_size).state;'
+            - number.set:
+                id: grams_per_serving_calculated
+                value: !lambda 'return id(last_refill_size).state / id(servings_since_refill).state;'
+            - number.set:
+                id: servings_since_refill
+                value: !lambda 'return 0;'
   - platform: template
     name: Feed Single
     id: feed_single
@@ -210,8 +266,11 @@ button:
     id: feed_meal
     on_press:
       then:
+      - switch.template.publish:
+          id: skip_next_meal
+          state: Off
       - button.press: feed_meal_internal
-      - binary_sensor.template.publish:
+      - switch.template.publish:
           id: skip_next_meal
           state: On
   - platform: template
@@ -220,15 +279,21 @@ button:
     id: feed_meal_internal
     on_press:
       then:
+      - logger.log:
+          format: "Feeding meal active= %d, total= %d, skip=%d"
+          args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state' ]
       - if:
           condition:
-            binary_sensor.is_off: skip_next_meal
+            switch.is_off: skip_next_meal
           then:
           - while:
               condition:
                 lambda: |-
                   return id(active_servings).state < id(servings).state;
               then:
+                - logger.log:
+                    format: "Feeding serving %d of %d"
+                    args: [ 'id(active_servings).state', 'id(servings).state' ]
                 - binary_sensor.template.publish:
                     id: feeding_active
                     state: ON
@@ -236,9 +301,11 @@ button:
                 - wait_until:
                     binary_sensor.is_off: feeding_active
                 - number.increment: active_servings
+                - delay: 1s
           - number.to_min: active_servings
           else:
-          - binary_sensor.template.publish:
+          - logger.log: "Not feeding meal because skip next meal is on"
+          - switch.template.publish:
               id: skip_next_meal
               state: OFF
   - platform: template
@@ -247,6 +314,9 @@ button:
     id: feed_single_internal
     on_press:
       then:
+      - logger.log:
+          format: "Feeding today=%d, since refill=%d, total=%d"
+          args: [ 'id(servings_today).state', 'id(servings_since_refill).state', 'id(servings_total).state' ]
       - binary_sensor.template.publish:
           id: feeding_active
           state: ON
@@ -358,17 +428,30 @@ text_sensor:
       return std::to_string(hour12) + ":00 " + period;
 sensor:
   - platform: template
-    name: "Servings per day (calculated)"
+    name: "Feeding active"
+    id: feeding_active_public
+  - platform: template
+    name: "Servings per day"
     id: servings_per_day
     state_class: "measurement"
     lambda: !lambda |-
       return id(grams_per_day).state / id(grams_per_serving).state;
   - platform: template
-    name: "Spins per serving (calculated)"
-    id: servings
+    name: "Servings per day (calculated)"
+    id: servings_per_day_calculated
     state_class: "measurement"
     lambda: !lambda |-
+      return id(grams_per_day).state / id(grams_per_serving_calculated).state;
+  - platform: template
+    name: "Servings per meal"
+    id: servings
+    state_class: "measurement"
+    update_interval: 1s
+    lambda: !lambda |-
       float feed_count = 3;
+      if(id(grams_per_serving_calculated).has_state() && id(grams_per_serving_calculated).state > 0 && id(calculate_by_refill).state) {
+        return floor(id(servings_per_day_calculated).state / feed_count);
+      }
       return floor(id(servings_per_day).state / feed_count);
   - platform: template
     name: "Servings today"
@@ -382,6 +465,16 @@ sensor:
     id: servings_since_refill_sensor
     name: "Servings Since Refill"
     state_class: "total_increasing"
+  - platform: template
+    id: last_refill_size_sensor
+    name: "Last refill size"
+    lambda: !lambda |-
+      return id(last_refill_size).state;
+  - platform: template
+    id: grams_per_serving_calculated_sensor
+    name: "Grams per Serving (Calculated)"
+    lambda: !lambda |-
+      return id(grams_per_serving_calculated).state;
   - platform: template
     name: "Bonus treats today"
     id: bonus_treats
