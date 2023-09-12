@@ -50,5 +50,5 @@ jobs:
           # Loop through each YAML file and build it
           for yaml_file in "${yaml_array[@]}"; do
             echo "Building $yaml_file"
-            esphome build "$yaml_file"
+            esphome compile "$yaml_file"
           done
