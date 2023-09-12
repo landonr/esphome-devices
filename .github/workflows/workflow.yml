@@ -48,7 +48,7 @@ jobs:
           source: '.'
           extensions: 'h,cpp'
           style: file
-          exclude: './devices/components/homeThing/version.h'
+          exclude: '*/version.h'
           clangFormatVersion: 15
           
       - name: Build ESPHome YAML Files
