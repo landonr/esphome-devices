@@ -1,0 +1,85 @@
+esphome:
+  name: "online-font-test"
+
+esp32:
+  board: featheresp32
+
+logger:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  id: wifi_id
+  power_save_mode: HIGH
+
+
+packages:
+  ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
+
+
+external_components:
+  - source:
+    #   type: git
+    #   url: https://github.com/landonr/esphome-components
+    #   ref: main
+    # refresh: 0s
+      type: local
+      path: ../compile-online-image/esphome/components
+    components: [
+      font,
+      external_files
+    ]
+
+font:
+  - file: 
+      url: "https://github.com/landonr/homeThing/raw/main/fonts/iosevka.ttf"
+      # refresh: 10s
+      type: web
+    id: web_font
+    size: 24
+    glyphs: '^…*/|\$#<>!?"%()[]+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz&êÊîÎâÂôÔéÉíÍáÁóÓčëËüÜïÏöÖøØṣṢñãõÑÃÕ''’'
+
+  - file: 
+      url: "https://github.com/landonr/homeThing/raw/main/fonts/iosevka.ttf"
+      # refresh: 10s
+      type: web
+    id: web_font_medium
+    size: 20
+    glyphs: '^…*/|\$#<>!?"%()[]+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz&êÊîÎâÂôÔéÉíÍáÁóÓčëËüÜïÏöÖøØṣṢñãõÑÃÕ''’'
+
+  - file: "fonts/iosevka.ttf"
+    id: local_font
+    size: 16
+    glyphs: '^…*/|\$#<>!?"%()[]+=,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz&êÊîÎâÂôÔéÉíÍáÁóÓčëËüÜïÏöÖøØṣṢñãõÑÃÕ''’'
+  - file: "https://github.com/landonr/homeThing/raw/main/fonts/materialdesignicons-webfont.ttf" 
+    id: material_font_large
+    size: 20
+    glyphs: [
+      '󰐊', # mdi-play
+    ]
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 20
+
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
+
+display:
+  - platform: st7789v
+    model: TTGO_TDisplay_135x240
+    id: my_display
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO23
+    rotation: 90
+    update_interval: 10s
+    lambda: |-
+      it.print(0, 0, id(web_font), "web font");
+      it.print(0, 25, id(web_font_medium), "web font medium");
+      it.print(0, 50, id(local_font), "local font");
+      it.print(0, 75, id(material_font_large), "󰐊");
+      it.print(0, 100, id(roboto), "gfont");
+      return;

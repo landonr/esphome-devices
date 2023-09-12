@@ -40,24 +40,25 @@ external_components:
   #   components: [axp192]
   #   refresh: 0s
   - source:
-      type: local
-      path: ../axp192/components
-    refresh: 0s
-    components: [ axp192 ]
+      type: git
+      url: https://github.com/landonr/esphome-axp192
+      ref: lando/add-charging-indicator
+    # type: local
+    # path: ../axp192/components
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/homeThing
-    #   ref: main
-      type: local
-      path: ../homeThing/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+      # type: local
+      # path: ../homeThing/components
     refresh: 0s
     components: [homeThing]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/esphome-components
-    #   ref: main
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+      # type: local
+      # path: ../local_components/components
     refresh: 0s
     components: [
       homeassistant_component,
@@ -73,19 +74,23 @@ logger:
   level: DEBUG
 
 packages:
-#   device_base: !include ../homeThing/common/device_base.yaml
-  # home_media_player: !include homeConfig/media_player_light.yaml
-  # home_text_sensor: !include homeConfig/text_sensor.yaml
-  # home_light: !include homeConfig/light.yaml
-  # home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
-  # axp192: !include ../homeThing/common/m5stack-stickc/axp192-geiseri.yaml # power management and screen backlight
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      # common/fonts.yaml, # default font
+      # common/icon_fonts.yaml, # material icons
+      common/m5stack-stickc/axp192-marty.yaml, # power management and screen backlight
+      # common/m5stack-stickc/binary_sensor.yaml, # buttons
+      # common/m5stack-stickc/MiniEncoderC.yaml, # rotary encoder and built in led
+    ]
+    refresh: 0s
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # images: !include ../homeThing/common/images.yaml
   axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
-#   sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
-  binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
-#   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
+  # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
+  #   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
