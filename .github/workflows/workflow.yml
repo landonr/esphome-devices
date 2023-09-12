@@ -18,7 +18,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
+        
+      - name: Checkout common packages folder
+        uses: actions/checkout@v2
+        with:
+          repository: landonr/homeThing
+          path: ../homeThing/common  # Set the target path where you want to checkout the common folder
+          ref: main  # Change this to the desired branch or commit
+      
       - name: Install ESPHome
         run: |
           pip install esphome
