@@ -31,6 +31,10 @@ jobs:
       - name: Install ESPHome
         run: |
           pip install esphome
+
+      - name: Install Pillow
+        run: |
+          pip install Pillow
           
       - name: Create file
         run: |
