@@ -34,7 +34,7 @@ jobs:
 
       - name: Install Pillow
         run: |
-          pip install Pillow
+          pip install pillow">4.0.0,<10.0.0"
           
       - name: Create file
         run: |
