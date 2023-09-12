@@ -1,0 +1,54 @@
+name: Build ESPHome
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install ESPHome
+        run: |
+          pip install esphome
+          
+      - name: Create file
+        run: |
+          echo "d2lmaV9ic3NpZDogIjFDOjg3OjJDOjcwOkMyOkMyIgp3aWZpX3NzaWQ6ICJzc2lkIgp3aWZpX3Bhc3N3b3JkOiAid2lmaXBhc3MiCndpZmlfZmFsbGJhY2tfcGFzc3dvcmQ6ICJ3aWZpZmFsbGJhY2twYXNzIgphcGlfZW5jcnlwdGlvbjogImFwaWVuY3J5cHRpb24iCm90YV9lbmNyeXB0aW9uOiAib3RhZW5jcnlwdGlvbiIK" | base64 --decode > secrets.yaml
+
+      - name: List YAML Files
+        id: list_yaml_files
+        run: |
+          # List all .yaml files in a directory and store the result as a space-separated string
+          yaml_files=$(find /path/to/your/yaml/directory -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
+          echo "YAML_FILES=$yaml_files" >> $GITHUB_ENV
+          
+      - uses: DoozyX/clang-format-lint-action@v0.15
+        with:
+          source: '.'
+          extensions: 'h,cpp'
+          style: file
+          exclude: './components/homeThing/version.h'
+          clangFormatVersion: 15
+          
+      - name: Build ESPHome YAML Files
+        run: |
+          # Split the space-separated string into an array
+          IFS=' ' read -ra yaml_array <<< "$YAML_FILES"
+
+          # Loop through each YAML file and build it
+          for yaml_file in "${yaml_array[@]}"; do
+            echo "Building $yaml_file"
+            esphome build "$yaml_file"
+          done
