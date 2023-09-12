@@ -32,9 +32,13 @@ jobs:
         run: |
           pip install esphome
 
-      - name: Install Pillow
+      - name: Install Pillow pip install cairosvg
         run: |
           pip install pillow">4.0.0,<10.0.0"
+          
+      - name: Install Cairosvg 
+        run: |
+          pip install cairosvg
           
       - name: Create file
         run: |
