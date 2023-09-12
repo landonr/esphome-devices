@@ -1,0 +1,52 @@
+media_player_source_sonos:
+  id: sonos
+
+media_player_source_spotify:
+  id: spotty
+
+media_player_source_custom:
+  - id: fav_playlists
+    name: playlists
+    sources:
+      name: liked songs
+      media_id: spotify:user:t5vciyb6zy94uerxdhb0mopfn:collection
+      media_type: playlist
+  - id: youtube_videos
+    name: youtube videos
+    sources:
+      - name: fred again boilerroom
+        media_id: c0-hvjV2A5Y
+        media_type: app
+        app: youtube
+      - name: 100 gecs boilerroom
+        media_id: 8NWHnWbpxmc
+        media_type: app
+        app: youtube
+      - name: young marco dekmantel 2017
+        media_id: 1_vXiL_qD5c
+        media_type: app
+        app: youtube
+      - name: fred again, skrilly, four tet coachella
+        media_id: dFfC92iBxNw
+        media_type: app
+        app: youtube
+
+media_player:
+  - platform: homeassistant_media_player
+    name: Muse
+    entity_id: "media_player.muse_proto"
+    id: media_player_muse
+    type: speaker
+    sources:
+      - id: sonos
+        type: sonos
+      - id: spotty
+        type: spotify
+      - id: fav_playlists
+        type: custom
+
+homeassistant_media_player:
+  id: media_group_component
+  media_players:
+    - id: media_player_muse
+      type: speaker
