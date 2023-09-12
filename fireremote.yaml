@@ -28,12 +28,12 @@ external_components:
       url: https://github.com/ssieb/custom_components
     components: [ ip5306 ]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/homeThing
-    #   ref: main
-    # refresh: 0s
-      type: local
-      path: ../homeThing/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+    refresh: 0s
+    #   type: local
+    #   path: ../homeThing/components
     components: [homeThing]
   - source:
       type: git
@@ -48,25 +48,46 @@ external_components:
       media_player_source,
       media_player_source_sonos,
       media_player_source_spotify,
-      media_player_source_custom
-    ]
-  - source:
-      type: local
-      path: ../local_components/components
-    components: [
+      media_player_source_custom,
       UnitEncoderC
     ]
+  # - source:
+  #     type: local
+  #     path: ../local_components/components
+  #   components: [
+  #     UnitEncoderC
+  #   ]
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
 
 packages:
-  device_base: !include ../homeThing/common/device_base.yaml
   home_media_player: !include homeConfig/media_player.yaml
   home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # device_base: !include ../homeThing/common/device_base.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # images: !include ../homeThing/common/images.yaml
-  settings: !include ../homeThing/common/settings.yaml
+  # settings: !include ../homeThing/common/settings.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      common/m5stack-fire/ip5306.yaml, # power management and screen backlight
+      common/m5stack-fire/sleep.yaml, # deep sleep
+      common/m5stack-fire/binary_sensor.yaml, # buttons
+      common/m5stack-fire/backlight.yaml, # backlight
+      common/m5stack-fire/sidelight.yaml, # sidelight
+      common/images.yaml, # boot screen image
+      common/settings.yaml, # settings screen
+    ]
+    refresh: 0s
 
 substitutions:
   friendly_name: "homeThingFireRemote"
@@ -77,139 +98,6 @@ substitutions:
   home_thing_logo_size: "64"
   material_font_large_size: "28"
   material_font_small_size: "24"
-
-i2c:
-  - id: bus_a
-    sda: 21
-    scl: 22
-    scan: True
-  - id: bus_b
-    sda: GPIO0
-    scl: GPIO26
-    scan: true
-
-UnitEncoderC:
-  id: encoder_base
-  i2c_id: bus_a
-  button:
-    name: "${friendly_name} Rotary Button"
-    id: rotary_button
-    internal: True
-    on_press:
-      then:
-        - lambda: |-
-            id(homeThingMenu)->buttonPressSelect();
-  encoder:
-    name: "${friendly_name} Rotary Encoder"
-    id: rotary
-    internal: True
-    encoder_filter: 2
-    on_clockwise:
-      - lambda: |-
-          id(homeThingMenu)->buttonPressWakeUpDisplay();
-          id(homeThingMenu)->rotaryScrollClockwise(id(rotary).state);
-    on_anticlockwise:
-      - lambda: |-
-          id(homeThingMenu)->buttonPressWakeUpDisplay();
-          id(homeThingMenu)->rotaryScrollCounterClockwise(id(rotary).state);
-
-ip5306:
-  i2c_id: bus_a
-  battery_level:
-    name: ${friendly_name} Battery Percent
-    id: battery_percent
-  charger_connected:
-    internal: true
-    id: connected
-  charge_full:
-    id: full
-    internal: true
-
-deep_sleep:
-  id: deep_sleep_
-  wakeup_pin: 39
-  wakeup_pin_mode: INVERT_WAKEUP
-
-binary_sensor:
-  - platform: gpio
-    id: M5_BtnA
-    pin:
-      number: 39
-      inverted: true
-    on_click:
-      then:
-        - lambda: |-
-            id(homeThingMenu)->rotaryScrollCounterClockwise(0);
-  - platform: gpio
-    id: M5_BtnB
-    pin:
-      number: 38
-      inverted: true
-    on_click:
-      then:
-        - lambda: |-
-           id(homeThingMenu)->buttonPressSelect();
-  - platform: gpio
-    id: M5_BtnC
-    pin:
-      number: 37
-      inverted: true
-    on_press:
-      - voice_assistant.start:
-    on_release:
-      - voice_assistant.stop:
-    # on_click:
-    #   then:
-    #     - lambda: |-
-    #         id(homeThingMenu)->rotaryScrollClockwise(0);
-
-# We can still control the backlight independently
-switch:
-  - platform: template
-    name: ${friendly_name} Sleep Toggle
-    id: sleep_toggle
-    optimistic: true
-    on_turn_on:
-      then:
-        - deep_sleep.enter:
-            id: deep_sleep_
-
-output:
-  - platform: ledc
-    pin: 32
-    id: gpio_32_backlight_pwm
-
-light:
-  - platform: monochromatic
-    output: gpio_32_backlight_pwm
-    name: ${friendly_name} Backlight
-    id: backlight
-    restore_mode: ALWAYS_ON
-  - platform: fastled_clockless
-    chipset: SK6812
-    pin: GPIO15
-    num_leds: 10
-    rgb_order: GRB
-    id: side_light
-    name: ${friendly_name} Remote Light
-    restore_mode: ALWAYS_OFF
-    default_transition_length: 0s
-    effects:
-      - addressable_rainbow:
-          name: Rainbow Effect
-          speed: 20
-          width: 15
-
-spi:
-  clk_pin: 18
-  mosi_pin: 23
-  miso_pin: 19
-
-cover:
-  - platform: homeassistant_component
-    entity_id: "cover.megadesk_cover"
-    name: "Megadesk"
-    id: cover_megadesk
 
 homeThing:
   id: homeThingMenu
@@ -234,7 +122,7 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
     header_height: 24
     margin_size: 8
     slider_margin_size: 6
@@ -249,8 +137,6 @@ homeThing:
   screens:
     - name: Desk Screen
       entities:
-        - type: cover
-          id: cover_megadesk
         - type: command
           name: "desk nudge up"
           command:
@@ -283,6 +169,11 @@ homeThing:
         - id: wifi_ip
           type: text_sensor
 
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+  miso_pin: 19
+
 display:
   - platform: ili9xxx
     model: M5STACK
@@ -295,23 +186,23 @@ display:
       id(homeThingMenu)->draw_menu_screen();
       return;
 
-i2s_audio:
-  i2s_lrclk_pin: GPIO15
-  # i2s_bclk_pin: GPIO35
+# i2s_audio:
+#   i2s_lrclk_pin: GPIO15
+#   # i2s_bclk_pin: GPIO35
 
-microphone:
-  - platform: i2s_audio
-    id: adc_mic
-    adc_type: internal
-    adc_pin: GPIO34
+# microphone:
+#   - platform: i2s_audio
+#     id: adc_mic
+#     adc_type: internal
+#     adc_pin: GPIO34
 
-speaker:
-  - platform: i2s_audio
-    dac_type: internal
-    i2s_dout_pin: GPIO25
-    mode: right
-    id: speaker_id
+# speaker:
+#   - platform: i2s_audio
+#     dac_type: internal
+#     i2s_dout_pin: GPIO25
+#     mode: right
+#     id: speaker_id
 
-voice_assistant:
-  microphone: adc_mic
-  speaker: speaker_id
+# voice_assistant:
+#   microphone: adc_mic
+#   speaker: speaker_id
