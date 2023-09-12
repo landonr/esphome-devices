@@ -18,12 +18,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          path: devices
         
       - name: Checkout common packages folder
         uses: actions/checkout@v2
         with:
           repository: landonr/homeThing
-          path: ../homeThing/common  # Set the target path where you want to checkout the common folder
+          path: homeThing/common  # Set the target path where you want to checkout the common folder
           ref: main  # Change this to the desired branch or commit
       
       - name: Install ESPHome
@@ -38,7 +40,7 @@ jobs:
         id: list_yaml_files
         run: |
           # List all .yaml files in a directory and store the result as a space-separated string
-          yaml_files=$(find . -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
+          yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
           echo "YAML_FILES=$yaml_files" >> $GITHUB_ENV
           
       - uses: DoozyX/clang-format-lint-action@v0.15
@@ -57,5 +59,5 @@ jobs:
           # Loop through each YAML file and build it
           for yaml_file in "${yaml_array[@]}"; do
             echo "Building $yaml_file"
-            esphome compile "$yaml_file"
+            esphome compile devices/"$yaml_file"
           done
