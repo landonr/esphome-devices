@@ -25,7 +25,7 @@ jobs:
         id: create_matrix
         run: |
           # Read the list of YAML files and create a matrix
-          yaml_files=$(find . -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
+          yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
           yaml_array="[\"$(echo "$yaml_files" | sed 's/ /", "/g')\"]"
           yaml_array=$(echo "$yaml_array" | sed 's/.....$/])/')
           echo "matrix=$yaml_array" >> $GITHUB_OUTPUT
