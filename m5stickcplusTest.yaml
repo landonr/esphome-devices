@@ -78,8 +78,8 @@ packages:
     url: https://github.com/landonr/homeThing
     ref: main
     files: [
-      # common/fonts.yaml, # default font
-      # common/icon_fonts.yaml, # material icons
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
       common/m5stack-stickc/axp192-marty.yaml, # power management and screen backlight
       # common/m5stack-stickc/binary_sensor.yaml, # buttons
       # common/m5stack-stickc/MiniEncoderC.yaml, # rotary encoder and built in led
@@ -88,12 +88,19 @@ packages:
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # images: !include ../homeThing/common/images.yaml
-  axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
+  # axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
   # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
   #   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO37
+      inverted: true
+    name: Button A
 
 spi:
   clk_pin: GPIO13
