@@ -2,17 +2,19 @@ esphome:
   name: fireremote
   platform: ESP32
   board: m5stack-fire
-  on_boot:
-    priority: 600.0
-    then:
-      - delay: 45s
-      - if:
-          condition:
-            not:
-              - wifi.connected:
-          then:
-            - switch.turn_on: sleep_toggle
-
+  # on_boot:
+  #   priority: 600.0
+  #   then:
+  #     - delay: 45s
+  #     - if:
+  #         condition:
+  #           not:
+  #             - wifi.connected:
+  #         then:
+  #           - switch.turn_on: sleep_toggle
+logger:
+api:
+ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -24,8 +26,10 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/ssieb/custom_components
+      # type: git
+      # url: https://github.com/ssieb/custom_components
+      type: local
+      path: ../ssieb_custom_components/components
     components: [ ip5306 ]
   - source:
       type: git
@@ -40,8 +44,8 @@ external_components:
       url: https://github.com/landonr/esphome-components
       ref: main
     refresh: 0s
-      # type: local
-      # path: ../local_components/components
+  #     # type: local
+  #     # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -63,10 +67,11 @@ external_components:
     components: [ font, external_files ]
 
 packages:
-  home_media_player: !include homeConfig/media_player.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
-  home_light: !include homeConfig/light.yaml
-  home_switch: !include homeConfig/switch.yaml
+  home_media_player: !include homeConfig/media_player_light.yaml
+  # home_text_sensor: !include homeConfig/text_sensor.yaml
+  # home_light: !include homeConfig/light.yaml
+  # home_switch: !include homeConfig/switch.yaml
+  ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -79,11 +84,12 @@ packages:
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
-      common/m5stack-fire/ip5306.yaml, # power management and screen backlight
+      # common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
       common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
       common/m5stack-fire/sidelight.yaml, # sidelight
+      common/UnitEncoderC.yaml, # encoder
       common/images.yaml, # boot screen image
       common/settings.yaml, # settings screen
     ]
@@ -98,6 +104,20 @@ substitutions:
   home_thing_logo_size: "64"
   material_font_large_size: "28"
   material_font_small_size: "24"
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_today"
+    name: "Servings today"
+    id: servings_today
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_total"
+    name: "Servings total"
+    id: servings_total
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_last_feed"
+    name: "Last feed"
+    id: last_feed
 
 homeThing:
   id: homeThingMenu
@@ -134,25 +154,30 @@ homeThing:
     dark_mode: true
     draw_volume_level: false
     draw_header_time: true
+  home_screen:
+    name: root
+    entities:
+        - type: command
+          name: "feed lil freak"
+          command:
+            - light.turn_on:
+                id: side_light
+                brightness: 100%
+                effect: Rainbow Effect
+            # - homeassistant.service:
+            #     service: button.press
+            #     data:
+            #       entity_id: "button.catfeeder_node_feed_single"
+            - delay: 3s
+            - light.turn_off:
+                id: side_light
+        - type: text_sensor
+          id: servings_today
+        - type: text_sensor
+          id: servings_total
+        - type: text_sensor
+          id: last_feed
   screens:
-    - name: Desk Screen
-      entities:
-        - type: command
-          name: "desk nudge up"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_up"
-        - type: command
-          name: "desk nudge down"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_down"
-        - id: light_desk_lamp
-          type: light
     - name: Settings Screen
       show_version: True
       entities:
@@ -181,7 +206,7 @@ display:
     dc_pin: 27
     reset_pin: 33
     id: my_display
-    update_interval: 3600s 
+    update_interval: 3600s
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
