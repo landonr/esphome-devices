@@ -26,30 +26,31 @@ wifi:
     password: !secret wifi_fallback_password
 
 external_components:
+  # - source:
+  #     type: git
+  #     url: https://github.com/esphome/esphome
+  #     ref: dev
+  #   components: [adc, i2s_audio, microphone]
   - source:
       type: git
-      url: https://github.com/esphome/esphome
-      ref: dev
-    components: [adc, i2s_audio, microphone]
+      url: https://github.com/landonr/esphome-axp192
+      ref: lando/add-charging-indicator
+    # type: local
+    # path: ../axp192/components
   - source:
       type: git
-      url: https://gitlab.com/geiseri/esphome_extras.git
-    refresh: 0s
-    components: [axp192]
-  - source:
-    #   type: git
-    #   url: https://github.com/landonr/homeThing
-    #   ref: main
-      type: local
-      path: ../homeThing/components
+      url: https://github.com/landonr/homeThing
+      ref: main
+      # type: local
+      # path: ../homeThing/components
     refresh: 0s
     components: [homeThing]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/esphome-components
-    #   ref: main
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+      # type: local
+      # path: ../local_components/components
     refresh: 0s
     components: [
       homeassistant_component,
@@ -60,24 +61,42 @@ external_components:
       media_player_source_custom,
       MiniEncoderC
     ]
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
 
 
 packages:
-  device_base: !include ../homeThing/common/device_base.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      common/m5stack-stickc/axp192-marty.yaml, # power management and screen backlight
+      common/m5stack-stickc/sleep.yaml, # deep sleep
+      common/m5stack-stickc/binary_sensor.yaml, # buttons
+      common/m5stack-stickc/MiniEncoderC.yaml, # rotary encoder and built in led
+      common/images.yaml # boot screen image
+    ]
+    refresh: 0s
   home_media_player: !include homeConfig/media_player_light.yaml
   home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # images: !include ../homeThing/common/images.yaml
-  axp192: !include ../homeThing/common/m5stack-stickc/axp192.yaml # power management and screen backlight
-  sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
-  binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
-  mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
+  # device_base: !include ../homeThing/common/device_base.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # axp192: !include ../homeThing/common/m5stack-stickc/axp192.yaml # power management and screen backlight
+  # sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
+  # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
+  # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
+  # log_level: DEBUG
 
 spi:
   clk_pin: GPIO13
@@ -104,7 +123,7 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
     draw_now_playing_bottom_menu: True
 
 display:

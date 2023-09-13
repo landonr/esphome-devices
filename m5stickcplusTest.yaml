@@ -1,0 +1,142 @@
+esphome:
+  name: m5stickcplus
+
+esp32:
+  board: m5stick-c
+  framework:
+    type: arduino
+
+ota:
+
+api:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  id: wifi_id
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret wifi_fallback_password
+
+external_components:
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+    refresh: 0s
+  - source: github://pr#5254 # used to load images on compile
+    refresh: 0s
+    components: [ font, external_files ]
+  # - source:
+  #     type: git
+  #     url: https://github.com/esphome/esphome
+  #     ref: dev
+  #   components: [adc, i2s_audio, microphone]
+  # - source:
+  #     type: git
+  #     url: https://gitlab.com/geiseri/esphome_extras.git
+  #   refresh: 0s
+  #   components: [axp192]
+  # - source: github://paulchilton/esphome-axp192
+  #   components: [axp192]
+  #   refresh: 0s
+  - source:
+      type: git
+      url: https://github.com/landonr/esphome-axp192
+      ref: lando/add-charging-indicator
+    # type: local
+    # path: ../axp192/components
+  - source:
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+      # type: local
+      # path: ../homeThing/components
+    refresh: 0s
+    components: [homeThing]
+  - source:
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+      # type: local
+      # path: ../local_components/components
+    refresh: 0s
+    components: [
+      homeassistant_component,
+      homeassistant_media_player,
+      media_player_source,
+      media_player_source_sonos,
+      media_player_source_spotify,
+      media_player_source_custom,
+      MiniEncoderC
+    ]
+
+logger:
+  level: DEBUG
+
+packages:
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      common/m5stack-stickc/axp192-marty.yaml, # power management and screen backlight
+      # common/m5stack-stickc/binary_sensor.yaml, # buttons
+      # common/m5stack-stickc/MiniEncoderC.yaml, # rotary encoder and built in led
+    ]
+    refresh: 0s
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # images: !include ../homeThing/common/images.yaml
+  # axp192: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
+  # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
+  #   mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
+
+substitutions:
+  friendly_name: "homeThingM5StickPlus"
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO37
+      inverted: true
+    name: Button A
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO15
+
+display:
+  - platform: st7789v
+    model: TTGO_TDisplay_135x240
+    id: my_display
+    cs_pin: GPIO5
+    dc_pin: GPIO23
+    reset_pin: GPIO18
+    rotation: 270
+    update_interval: 1s
+    lambda: |-
+      if (id(axp_charger).state) {
+        it.rectangle(10, 10, 108, 44, Color(0, 255, 0));
+        it.printf(60, 25, id(small_font), "Charging");
+      } else {
+        it.rectangle(10, 10, 108, 44, Color(255, 0, 0));
+        it.printf(60, 25, id(small_font), "Not Charging");
+      }
+      it.printf(20, 50, id(small_font), "Battery: %f", id(batteryPercent).state);
+      return;
+
+# Individual outputs
+switch:
+  # - platform: gpio
+  #   name: "PCF8574 Pin #0"
+  #   id: ledpin
+  #   pin:
+  #     pcf8574: pcf8574_hub
+  #     number: 3
+  #     mode:
+  #       output: true
+  #     inverted: True
+  - platform: restart
+    id: restart_switch
+    name: "${friendly_name} Restart"

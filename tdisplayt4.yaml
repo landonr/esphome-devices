@@ -17,12 +17,12 @@ wifi:
 
 external_components:
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/homeThing
-    #   ref: main
-    # refresh: 0s
-      type: local
-      path: components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+    refresh: 0s
+      # type: local
+      # path: ../homeThing/components
     components: [homeThing]
   - source:
       type: git
@@ -39,15 +39,30 @@ external_components:
       media_player_source_spotify,
       media_player_source_custom
     ]
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
 
 packages:
-  device_base: !include ../homeThing/common/device_base.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      common/images.yaml, # material icons
+    ]
+    refresh: 0s
   home_media_player: !include homeConfig/media_player.yaml
   home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # device_base: !include ../homeThing/common/device_base.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # images: !include ../homeThing/common/images.yaml
 
 substitutions:
   friendly_name: "tdisplayT4"

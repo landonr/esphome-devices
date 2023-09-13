@@ -28,18 +28,18 @@ substitutions:
   log_level: "WARN"
 
 external_components:
-  # - source: github://landonr/homeThing@lando/now-playing-commands
-  #   refresh: 0s
-  - source:
-      type: local
-      path: ../homeThing/components
+  - source: github://landonr/homeThing
+    refresh: 0s
+  # - source:
+    #   type: local
+    #   path: ../homeThing/components
     components: [homeThing]
   - source:
-      type: local
-      path: ../local_components/components
-      # type: git
-      # url: https://github.com/landonr/esphome-components
-      # ref: main
+      # type: local
+      # path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
     refresh: 0s
     components: [
       homeassistant_component,
@@ -49,20 +49,49 @@ external_components:
       media_player_source_spotify,
       media_player_source_custom
     ]
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
   
 packages:
-  device_base: !include ../homeThing/common/device_base.yaml
+  # home_media_player: !include homeConfig/media_player.yaml
+  # home_switch: !include homeConfig/switch.yaml
+
+  # device_base: !include ../homeThing/common/device_base.yaml
   # settings: !include ../homeThing/common/settings.yaml
-  ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
+  # ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ip  od_battery.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
   # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
-  ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
+  # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
   # home_media_player: !include homeConfig/media_player.yaml
   # home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts-light.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  debug: !include ../homeThing/common/debugging.yaml
+  # fonts: !include ../homeThing/common/fonts-light.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # debug: !include ../homeThing/common/debugging.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
+      common/ipod/lilygo_tdisplay_ipod_backlight.yaml, # used for toggling backlight
+      common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      # common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
+      # common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml, # used for button controls
+      # common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
+      # common/settings.yaml, # settings screen
+      # common/images.yaml # boot screen image
+    ]
+    refresh: 0s
+
+image:
+  id: launch_image
+  file: "https://freight.cargo.site/t/original/i/35740c5dcf360e685ed3f8a27095b923c658ea3435692ecfa6b2036725a90776/desklogo.png"
+  resize: 168x60
+  type: TRANSPARENT_BINARY
 
 switch:
   - platform: restart
@@ -129,7 +158,7 @@ homeThing:
     font_large_heavy: large_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
   home_screen:
     name: root
     entities:

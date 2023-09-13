@@ -2,17 +2,19 @@ esphome:
   name: fireremote
   platform: ESP32
   board: m5stack-fire
-  on_boot:
-    priority: 600.0
-    then:
-      - delay: 45s
-      - if:
-          condition:
-            not:
-              - wifi.connected:
-          then:
-            - switch.turn_on: sleep_toggle
-
+  # on_boot:
+  #   priority: 600.0
+  #   then:
+  #     - delay: 45s
+  #     - if:
+  #         condition:
+  #           not:
+  #             - wifi.connected:
+  #         then:
+  #           - switch.turn_on: sleep_toggle
+logger:
+api:
+ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
@@ -26,47 +28,72 @@ external_components:
   - source:
       type: git
       url: https://github.com/ssieb/custom_components
-    components: [ ip5306 ]
+      # type: local
+      # path: ../ssieb_custom_components/components
+    # components: [ ip5306 ]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/homeThing
-    #   ref: main
-    # refresh: 0s
-      type: local
-      path: ../homeThing/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+    refresh: 0s
+    #   type: local
+    #   path: ../homeThing/components
     components: [homeThing]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
       ref: main
     refresh: 0s
-      # type: local
-      # path: ../local_components/components
+  #     # type: local
+  #     # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
       media_player_source,
       media_player_source_sonos,
       media_player_source_spotify,
-      media_player_source_custom
-    ]
-  - source:
-      type: local
-      path: ../local_components/components
-    components: [
+      media_player_source_custom,
       UnitEncoderC
     ]
+  # - source:
+  #     type: local
+  #     path: ../local_components/components
+  #   components: [
+  #     UnitEncoderC
+  #   ]
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
 
 packages:
-  device_base: !include ../homeThing/common/device_base.yaml
-  home_media_player: !include homeConfig/media_player.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
-  home_light: !include homeConfig/light.yaml
-  home_switch: !include homeConfig/switch.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  home_media_player: !include homeConfig/media_player_light.yaml
+  # home_text_sensor: !include homeConfig/text_sensor.yaml
+  # home_light: !include homeConfig/light.yaml
+  # home_switch: !include homeConfig/switch.yaml
+  # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
+  # device_base: !include ../homeThing/common/device_base.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # images: !include ../homeThing/common/images.yaml
-  settings: !include ../homeThing/common/settings.yaml
+  # settings: !include ../homeThing/common/settings.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
+      common/m5stack-fire/ip5306.yaml, # power management and screen backlight
+      common/m5stack-fire/sleep.yaml, # deep sleep
+      common/m5stack-fire/binary_sensor.yaml, # buttons
+      common/m5stack-fire/backlight.yaml, # backlight
+      common/m5stack-fire/sidelight.yaml, # sidelight
+      common/UnitEncoderC.yaml, # encoder
+      common/images.yaml, # boot screen image
+      common/settings.yaml, # settings screen
+    ]
+    refresh: 0s
 
 substitutions:
   friendly_name: "homeThingFireRemote"
@@ -78,138 +105,19 @@ substitutions:
   material_font_large_size: "28"
   material_font_small_size: "24"
 
-i2c:
-  - id: bus_a
-    sda: 21
-    scl: 22
-    scan: True
-  - id: bus_b
-    sda: GPIO0
-    scl: GPIO26
-    scan: true
-
-UnitEncoderC:
-  id: encoder_base
-  i2c_id: bus_a
-  button:
-    name: "${friendly_name} Rotary Button"
-    id: rotary_button
-    internal: True
-    on_press:
-      then:
-        - lambda: |-
-            id(homeThingMenu)->buttonPressSelect();
-  encoder:
-    name: "${friendly_name} Rotary Encoder"
-    id: rotary
-    internal: True
-    encoder_filter: 2
-    on_clockwise:
-      - lambda: |-
-          id(homeThingMenu)->buttonPressWakeUpDisplay();
-          id(homeThingMenu)->rotaryScrollClockwise(id(rotary).state);
-    on_anticlockwise:
-      - lambda: |-
-          id(homeThingMenu)->buttonPressWakeUpDisplay();
-          id(homeThingMenu)->rotaryScrollCounterClockwise(id(rotary).state);
-
-ip5306:
-  i2c_id: bus_a
-  battery_level:
-    name: ${friendly_name} Battery Percent
-    id: battery_percent
-  charger_connected:
-    internal: true
-    id: connected
-  charge_full:
-    id: full
-    internal: true
-
-deep_sleep:
-  id: deep_sleep_
-  wakeup_pin: 39
-  wakeup_pin_mode: INVERT_WAKEUP
-
-binary_sensor:
-  - platform: gpio
-    id: M5_BtnA
-    pin:
-      number: 39
-      inverted: true
-    on_click:
-      then:
-        - lambda: |-
-            id(homeThingMenu)->rotaryScrollCounterClockwise(0);
-  - platform: gpio
-    id: M5_BtnB
-    pin:
-      number: 38
-      inverted: true
-    on_click:
-      then:
-        - lambda: |-
-           id(homeThingMenu)->buttonPressSelect();
-  - platform: gpio
-    id: M5_BtnC
-    pin:
-      number: 37
-      inverted: true
-    on_press:
-      - voice_assistant.start:
-    on_release:
-      - voice_assistant.stop:
-    # on_click:
-    #   then:
-    #     - lambda: |-
-    #         id(homeThingMenu)->rotaryScrollClockwise(0);
-
-# We can still control the backlight independently
-switch:
-  - platform: template
-    name: ${friendly_name} Sleep Toggle
-    id: sleep_toggle
-    optimistic: true
-    on_turn_on:
-      then:
-        - deep_sleep.enter:
-            id: deep_sleep_
-
-output:
-  - platform: ledc
-    pin: 32
-    id: gpio_32_backlight_pwm
-
-light:
-  - platform: monochromatic
-    output: gpio_32_backlight_pwm
-    name: ${friendly_name} Backlight
-    id: backlight
-    restore_mode: ALWAYS_ON
-  - platform: fastled_clockless
-    chipset: SK6812
-    pin: GPIO15
-    num_leds: 10
-    rgb_order: GRB
-    id: side_light
-    name: ${friendly_name} Remote Light
-    restore_mode: ALWAYS_OFF
-    default_transition_length: 0s
-    effects:
-      - addressable_rainbow:
-          name: Rainbow Effect
-          speed: 20
-          width: 15
-
-spi:
-  clk_pin: 18
-  mosi_pin: 23
-  miso_pin: 19
-
-cover:
-  - platform: homeassistant_component
-    entity_id: "cover.megadesk_cover"
-    name: "Megadesk"
-    id: cover_megadesk
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_today"
+    name: "Servings today"
+    id: servings_today
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_servings_total"
+    name: "Servings total"
+    id: servings_total
+  - platform: homeassistant
+    entity_id: "sensor.catfeeder_node_last_feed"
+    name: "Last feed"
+    id: last_feed
 
 homeThing:
   id: homeThingMenu
@@ -234,7 +142,7 @@ homeThing:
     font_large_heavy: large_heavy_font
     font_material_large: material_font_large
     font_material_small: material_font_small
-    font_logo: home_thing_logo
+    launch_image: launch_image
     header_height: 24
     margin_size: 8
     slider_margin_size: 6
@@ -246,27 +154,30 @@ homeThing:
     dark_mode: true
     draw_volume_level: false
     draw_header_time: true
+  home_screen:
+    name: root
+    entities:
+        - type: command
+          name: "feed lil freak"
+          command:
+            - light.turn_on:
+                id: side_light
+                brightness: 100%
+                effect: Rainbow Effect
+            # - homeassistant.service:
+            #     service: button.press
+            #     data:
+            #       entity_id: "button.catfeeder_node_feed_single"
+            - delay: 3s
+            - light.turn_off:
+                id: side_light
+        - type: text_sensor
+          id: servings_today
+        - type: text_sensor
+          id: servings_total
+        - type: text_sensor
+          id: last_feed
   screens:
-    - name: Desk Screen
-      entities:
-        - type: cover
-          id: cover_megadesk
-        - type: command
-          name: "desk nudge up"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_up"
-        - type: command
-          name: "desk nudge down"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.desk_position_nudge_down"
-        - id: light_desk_lamp
-          type: light
     - name: Settings Screen
       show_version: True
       entities:
@@ -283,6 +194,11 @@ homeThing:
         - id: wifi_ip
           type: text_sensor
 
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+  miso_pin: 19
+
 display:
   - platform: ili9xxx
     model: M5STACK
@@ -290,28 +206,28 @@ display:
     dc_pin: 27
     reset_pin: 33
     id: my_display
-    update_interval: 3600s 
+    update_interval: 3600s
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
 
-i2s_audio:
-  i2s_lrclk_pin: GPIO15
-  # i2s_bclk_pin: GPIO35
+# i2s_audio:
+#   i2s_lrclk_pin: GPIO15
+#   # i2s_bclk_pin: GPIO35
 
-microphone:
-  - platform: i2s_audio
-    id: adc_mic
-    adc_type: internal
-    adc_pin: GPIO34
+# microphone:
+#   - platform: i2s_audio
+#     id: adc_mic
+#     adc_type: internal
+#     adc_pin: GPIO34
 
-speaker:
-  - platform: i2s_audio
-    dac_type: internal
-    i2s_dout_pin: GPIO25
-    mode: right
-    id: speaker_id
+# speaker:
+#   - platform: i2s_audio
+#     dac_type: internal
+#     i2s_dout_pin: GPIO25
+#     mode: right
+#     id: speaker_id
 
-voice_assistant:
-  microphone: adc_mic
-  speaker: speaker_id
+# voice_assistant:
+#   microphone: adc_mic
+#   speaker: speaker_id
