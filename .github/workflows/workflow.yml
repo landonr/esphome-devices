@@ -36,7 +36,8 @@ jobs:
     needs: matrix_maker
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.matrix_maker.outputs.matrix) }}
+      matrix:
+        name: ${{ fromJSON(needs.matrix_maker.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.15
