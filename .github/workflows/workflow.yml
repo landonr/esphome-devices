@@ -26,13 +26,15 @@ jobs:
         run: |
           # Read the list of YAML files and create a matrix
           yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
-          matrix_json="{\"target\": ["
-          for yaml_file in "${yaml_files[@]}"; do
-            matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
-          done
-          matrix_json="${matrix_json%,}]}"
-          echo "::set-output name=matrix::$matrix_json"
-
+          return yaml_files
+          # matrix_json="{\"target\": ["
+          # for yaml_file in "${yaml_files[@]}"; do
+          #   matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
+          # done
+          # matrix_json="${matrix_json%,}]}"
+          # echo "::set-output name=matrix::$matrix_json"
+      - name: Debug output
+        run: echo "${{ steps.create_matrix.outputs.result }}"
   build:
     runs-on: ubuntu-latest
     needs: matrix_maker
