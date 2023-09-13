@@ -27,14 +27,14 @@ jobs:
           # Read the list of YAML files and create a matrix
           yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
           yaml_array="[$(echo "$yaml_files" | sed -e 's/\(.*\)/"\1"/' | paste -sd, -)]"
-        
-          echo "matrix=$yaml_array" >> $GITHUB_OUTPUT
-          # matrix_json="{\"target\": ["
-          # for yaml_file in "${yaml_files[@]}"; do
-          #   matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
-          # done
-          # matrix_json="${matrix_json%,}]}"
-          # echo "::set-output name=matrix::$matrix_json"
+          echo $yaml_array
+          matrix_json="{\"target\": ["
+          for yaml_file in "${yaml_files[@]}"; do
+            matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
+          done
+          matrix_json="${matrix_json%,}]}"
+          echo $matrix_json
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
       - name: Debug output
         run: echo "${{ steps.create_matrix.outputs.result }}"
   build:
