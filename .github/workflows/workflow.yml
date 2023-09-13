@@ -28,8 +28,8 @@ jobs:
           yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
           yaml_array="[\"$(echo "$yaml_files" | sed 's/ /", "/g')\"]"
           yaml_array=$(echo $yaml_array | sed 's/.....$/]/')
-          yaml_array=$(echo "$yaml_array" | sed 's/"/\\"/g')
-          echo "matrix=$yaml_array" >> $GITHUB_OUTPUT
+          # yaml_array=$(echo "$yaml_array" | sed 's/"/\\"/g')
+          echo "matrix=$(jq -c . < $yaml_array)" >> $GITHUB_OUTPUT
       - name: Debug output
         run: echo "${{ steps.create_matrix.outputs.matrix }}"
   build:
