@@ -15,7 +15,7 @@ jobs:
   matrix_maker:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.result }}
+      matrix: ${{ steps.create_matrix.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,8 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: matrix_maker
     strategy:
-      matrix:
-        version: ${{ fromJSON(needs.matrix_maker.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.15
