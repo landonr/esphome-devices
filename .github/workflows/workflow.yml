@@ -27,8 +27,9 @@ jobs:
           # Read the list of YAML files and create a matrix
           yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
           yaml_array="[\"$(echo "$yaml_files" | sed 's/ /", "/g')\"]"
-          yaml_array=$(echo $yaml_array | sed 's/.....$/]/' | jq -c '. | map(split("/")[0]) | unique')
-          echo "matrix=$yaml_minified" >> $GITHUB_OUTPUT
+          yaml_array=$(echo $yaml_array | sed 's/.....$/]/')
+          DATA=$(echo $yaml_array | jq -c )
+          echo "matrix=$DATA" >> $GITHUB_OUTPUT
       - name: Debug output
         run: echo "${{ steps.create_matrix.outputs.matrix }}"
   build:
