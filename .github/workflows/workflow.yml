@@ -26,7 +26,9 @@ jobs:
         run: |
           # Read the list of YAML files and create a matrix
           yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
-          return yaml_files
+          yaml_array="[$(echo "$yaml_files" | sed -e 's/\(.*\)/"\1"/' | paste -sd, -)]"
+        
+          echo "::set-output name=yamlArray::$yaml_array"
           # matrix_json="{\"target\": ["
           # for yaml_file in "${yaml_files[@]}"; do
           #   matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
