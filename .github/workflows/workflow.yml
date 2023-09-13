@@ -12,45 +12,35 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  build:
+  matrix_maker:
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.result }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
           path: devices
-        
-      - name: Checkout common packages folder
-        uses: actions/checkout@v2
-        with:
-          repository: landonr/homeThing
-          path: homeThing/common  # Set the target path where you want to checkout the common folder
-          ref: main  # Change this to the desired branch or commit
-      
-      - name: Install ESPHome
+      - name: Create yaml file matrix
+        id: create_matrix
         run: |
-          pip install esphome
+          # Read the list of YAML files and create a matrix
+          yaml_files=($(cat $GITHUB_WORKSPACE/yaml_files.txt))
+          matrix_json="{\"target\": ["
+          for yaml_file in "${yaml_files[@]}"; do
+            matrix_json="$matrix_json{\"yaml_file\": \"$yaml_file\"},"
+          done
+          matrix_json="${matrix_json%,}]}"
+          echo "::set-output name=matrix::$matrix_json"
 
-      - name: Install Pillow pip install cairosvg
-        run: |
-          pip install pillow">4.0.0,<10.0.0"
-          
-      - name: Install Cairosvg 
-        run: |
-          pip install cairosvg
-          
-      - name: Create file
-        run: |
-          echo "d2lmaV9ic3NpZDogIjFDOjg3OjJDOjcwOkMyOkMyIgp3aWZpX3NzaWQ6ICJzc2lkIgp3aWZpX3Bhc3N3b3JkOiAid2lmaXBhc3MiCndpZmlfZmFsbGJhY2tfcGFzc3dvcmQ6ICJ3aWZpZmFsbGJhY2twYXNzIgphcGlfZW5jcnlwdGlvbjogImFwaWVuY3J5cHRpb24iCm90YV9lbmNyeXB0aW9uOiAib3RhZW5jcnlwdGlvbiIK" | base64 --decode > devices/secrets.yaml
-
-      - name: List YAML Files
-        id: list_yaml_files
-        run: |
-          # List all .yaml files in a directory and store the result as a space-separated string
-          yaml_files=$(find devices/ -not -name "secrets.yaml" -maxdepth 1 -type f -name "*.yaml" -exec echo {} \; | tr '\n' ' ')
-          echo "YAML_FILES=$yaml_files" >> $GITHUB_ENV
-          
+  build:
+    runs-on: ubuntu-latest
+    needs: matrix_maker
+    strategy:
+      matrix:
+        version: ${{ fromJSON(needs.matrix_maker.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.15
         with:
           source: '.'
@@ -58,14 +48,10 @@ jobs:
           style: file
           exclude: '*/version.h'
           clangFormatVersion: 15
-          
-      - name: Build ESPHome YAML Files
+      - name: Create file
         run: |
-          # Split the space-separated string into an array
-          IFS=' ' read -ra yaml_array <<< "$YAML_FILES"
-
-          # Loop through each YAML file and build it
-          for yaml_file in "${yaml_array[@]}"; do
-            echo "Building $yaml_file"
-            esphome compile "$yaml_file"
-          done
+          echo "d2lmaV9ic3NpZDogIjFDOjg3OjJDOjcwOkMyOkMyIgp3aWZpX3NzaWQ6ICJzc2lkIgp3aWZpX3Bhc3N3b3JkOiAid2lmaXBhc3MiCndpZmlfZmFsbGJhY2tfcGFzc3dvcmQ6ICJ3aWZpZmFsbGJhY2twYXNzIgphcGlfZW5jcnlwdGlvbjogImFwaWVuY3J5cHRpb24iCm90YV9lbmNyeXB0aW9uOiAib3RhZW5jcnlwdGlvbiIK" | base64 --decode > secrets.yaml
+      - name: Build esphome
+        uses: esphome/build-action@v1.8.0
+        with:
+          yaml_file: ${{ matrix.name }}.yaml
