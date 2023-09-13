@@ -34,6 +34,7 @@ jobs:
     needs: matrix_maker
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.matrix_maker.outputs.matrix) }}
     steps:
