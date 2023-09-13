@@ -32,10 +32,10 @@ jobs:
       - name: Debug output
         run: echo "${{ steps.create_matrix.outputs.matrix }}"
   build:
-    runs-on: ubuntu-latest
     needs: matrix_maker
+    runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.matrix_maker.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
       - uses: DoozyX/clang-format-lint-action@v0.15
