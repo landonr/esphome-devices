@@ -89,9 +89,9 @@ packages:
 
 image:
   id: launch_image
-  file: "https://freight.cargo.site/t/original/i/982ca89a5c3478a3e4c74be09cf0f7888eff15f686a7e1b6b86441b178c460a6/desklogo.png"
+  file: "https://freight.cargo.site/t/original/i/35740c5dcf360e685ed3f8a27095b923c658ea3435692ecfa6b2036725a90776/desklogo.png"
   resize: 168x60
-  type: BINARY
+  type: TRANSPARENT_BINARY
 
 switch:
   - platform: restart

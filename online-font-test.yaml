@@ -15,21 +15,33 @@ wifi:
 
 
 packages:
-  ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
+  # ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
+  remote_package:
+    url: https://github.com/landonr/homeThing
+    ref: main
+    files: [
+      common/ipod/lilygo_tdisplay_ipod_backlight.yaml, # used for toggling backlight
+    ]
 
 
 external_components:
-  - source:
+  - source: github://pr#5214 # used to load images on compile
+    components: [ image ]
+    refresh: 0s
+  - source: github://pr#5254 # used to load fonts on compile
+    components: [ font, external_files ]
+    refresh: 0s
+  # - source:
     #   type: git
     #   url: https://github.com/landonr/esphome-components
     #   ref: main
     # refresh: 0s
-      type: local
-      path: ../compile-online-image/esphome/components
-    components: [
-      font,
-      external_files
-    ]
+    #   type: local
+    #   path: ../compile-online-image/esphome/components
+    # components: [
+    #   font,
+    #   external_files
+    # ]
 
 font:
   - file: 
@@ -58,9 +70,9 @@ font:
     glyphs: [
       '󰐊', # mdi-play
     ]
-  - file: "gfonts://Roboto"
-    id: roboto
-    size: 20
+  # - file: "gfonts://Roboto"
+  #   id: roboto
+  #   size: 20
 
 
 spi:
@@ -81,5 +93,5 @@ display:
       it.print(0, 25, id(web_font_medium), "web font medium");
       it.print(0, 50, id(local_font), "local font");
       it.print(0, 75, id(material_font_large), "󰐊");
-      it.print(0, 100, id(roboto), "gfont");
+      // it.print(0, 100, id(roboto), "gfont");
       return;
