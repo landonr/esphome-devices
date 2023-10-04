@@ -317,6 +317,7 @@ sensor:
 
 number:
   - platform: template
+    internal: False
     name: "Desk Height (cm)"
     id: megadesk_height
     min_value: 58.42
@@ -353,6 +354,7 @@ number:
 button:
   - platform: template
     id: desk_position_up
+    internal: False
     name: "Desk position up"
     on_press:
       then:

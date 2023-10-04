@@ -26,11 +26,11 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/ssieb/custom_components
-      # type: local
-      # path: ../ssieb_custom_components/components
-    # components: [ ip5306 ]
+      # type: git
+      # url: https://github.com/ssieb/custom_components
+      type: local
+      path: ../ssieb_custom_components/components
+    components: [ ip5306 ]
   - source:
       type: git
       url: https://github.com/landonr/homeThing
@@ -71,7 +71,7 @@ packages:
   # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
-  # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
+  ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -84,7 +84,7 @@ packages:
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
-      common/m5stack-fire/ip5306.yaml, # power management and screen backlight
+      # common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
       common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
@@ -210,24 +210,3 @@ display:
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
-
-# i2s_audio:
-#   i2s_lrclk_pin: GPIO15
-#   # i2s_bclk_pin: GPIO35
-
-# microphone:
-#   - platform: i2s_audio
-#     id: adc_mic
-#     adc_type: internal
-#     adc_pin: GPIO34
-
-# speaker:
-#   - platform: i2s_audio
-#     dac_type: internal
-#     i2s_dout_pin: GPIO25
-#     mode: right
-#     id: speaker_id
-
-# voice_assistant:
-#   microphone: adc_mic
-#   speaker: speaker_id
