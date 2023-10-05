@@ -38,20 +38,20 @@ wifi:
 
 external_components:
   - source:
-      # type: git
-      # url: https://github.com/landonr/homeThing
-      # ref: main
-    # refresh: 0s
-      type: local
-      path: ../homething/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+    refresh: 0s
+      # type: local
+      # path: ../homething/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy ]
   - source:
-    #   type: git
-    #   url: https://github.com/landonr/esphome-components
-    #   ref: main
-    # refresh: 0s
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+    refresh: 0s
+      # type: local
+      # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
