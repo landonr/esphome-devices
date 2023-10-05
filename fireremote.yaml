@@ -71,7 +71,7 @@ packages:
   # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
-  ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
+  # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -84,7 +84,7 @@ packages:
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
-      # common/m5stack-fire/ip5306.yaml, # power management and screen backlight
+      common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
       common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
