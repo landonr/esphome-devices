@@ -44,7 +44,7 @@ external_components:
       # type: local
       # path: ../homeThing/components
     refresh: 0s
-    components: [homeThing]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppCatToy ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -102,29 +102,39 @@ spi:
   clk_pin: GPIO13
   mosi_pin: GPIO15
 
+homeThingDisplayState:
+  id: display_state_id
+  font_small: small_font
+  font_medium: medium_font
+  font_large: large_font
+  font_large_heavy: large_heavy_font
+  font_material_large: material_font_large
+  font_material_small: material_font_small
+  launch_image: launch_image
+  draw_now_playing_bottom_menu: True
+
+homeThingAppNowPlaying:
+  id: now_playing
+  media_player_group: media_group_component
+  display: my_display
+  display_state: display_state_id
+
 homeThing:
   id: homeThingMenu
+  apps: 
+    - now_playing
   settings:
     mode: 3_button
   sleep_switch: sleep_toggle
   backlight: backlight
+  display_state: display_state_id
   # battery:
   #   battery_percent: battery_percent
   #   charging: axp_charger
-  media_player_group: media_group_component
   display: my_display
   on_redraw:
     then:
       component.update: my_display
-  display_state:
-    font_small: small_font
-    font_medium: medium_font
-    font_large: large_font
-    font_large_heavy: large_heavy_font
-    font_material_large: material_font_large
-    font_material_small: material_font_small
-    launch_image: launch_image
-    draw_now_playing_bottom_menu: True
 
 display:
   - platform: st7789v

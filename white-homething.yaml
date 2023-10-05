@@ -29,7 +29,7 @@ external_components:
       # type: local
       # path: ../homething/components
     refresh: 0s
-    components: [homeThing]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -52,7 +52,7 @@ external_components:
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
-  home_switch: !include homeConfig/switch.yaml
+  # home_switch: !include homeConfig/switch.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # ipod_control_backlight: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_backlight.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
@@ -97,33 +97,56 @@ light:
     entity_id: light.rgb_lights
     name: Color Lights 
 
+
+homeThingDisplayState:
+  id: display_state_id
+  draw_battery_level: true
+  font_small: small_font
+  font_medium: medium_font
+  font_large: large_font
+  font_large_heavy: large_font
+  font_material_large: material_font_large
+  font_material_small: material_font_small
+  launch_image: launch_image
+
+homeThingAppNowPlaying:
+  id: now_playing
+  media_player_group: media_group_component
+  display: my_display
+  display_state: display_state_id
+
+homeThingAppSnake:
+  id: snake
+  display: my_display
+  display_state: display_state_id
+
 homeThing:
   id: homeThingMenu
   settings:
     sleep_after: 14400
   sleep_switch: sleep_toggle
   backlight: backlight
+  boot:
+    api_connected: api_connected
+    media_player_group: media_group_component
   header:
     time_id: esptime
   battery:
     battery_percent: battery_percent
     charging: charging
-  media_player_group: media_group_component
+  apps: 
+    - now_playing
+    - snake
   display: my_display
   on_redraw:
     then:
       component.update: my_display
-  display_state:
-    colors:
-      accent_primary: my_primary_accent
-    draw_battery_level: true
-    font_small: small_font
-    font_medium: medium_font
-    font_large: large_font
-    font_large_heavy: large_font
-    font_material_large: material_font_large
-    font_material_small: material_font_small
-    launch_image: launch_image
+  display_state: display_state_id
+  home_screen:
+    name: root
+    entities:
+      - id: light_rgb_lights
+        type: light
   screens:
     - name: Desk Screen
       entities:

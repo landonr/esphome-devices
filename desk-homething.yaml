@@ -33,7 +33,7 @@ external_components:
   # - source:
     #   type: local
     #   path: ../homeThing/components
-    components: [homeThing]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying ]
   - source:
       # type: local
       # path: ../local_components/components
@@ -134,31 +134,41 @@ homeassistant_media_player:
     - id: media_player_beam
       type: speaker
 
+homeThingAppNowPlaying:
+  id: now_playing
+  media_player_group: media_group_component
+  display: my_display
+  display_state: display_state_id
+
+homeThingDisplayState:
+  id: display_state_id
+  colors:
+    accent_primary: my_primary_accent
+  draw_now_playing_bottom_menu: true
+  font_small: small_font
+  font_medium: medium_font
+  font_large: large_font
+  font_large_heavy: large_font
+  font_material_large: material_font_large
+  font_material_small: material_font_small
+  launch_image: launch_image
+
 homeThing:
   id: homeThingMenu
+  apps: 
+    - now_playing
   settings:
     sleep_after: 14400
     mode: rotary
     menu_rollback: true
   backlight: backlight
-  media_player_group: media_group_component
   display: my_display
+  display_state: display_state_id
   header:
     time_id: esptime
   on_redraw:
     then:
       component.update: my_display
-  display_state:
-    colors:
-      accent_primary: my_primary_accent
-    draw_now_playing_bottom_menu: true
-    font_small: small_font
-    font_medium: medium_font
-    font_large: large_font
-    font_large_heavy: large_font
-    font_material_large: material_font_large
-    font_material_small: material_font_small
-    launch_image: launch_image
   home_screen:
     name: root
     entities:
@@ -317,6 +327,7 @@ sensor:
 
 number:
   - platform: template
+    internal: False
     name: "Desk Height (cm)"
     id: megadesk_height
     min_value: 58.42
@@ -353,6 +364,7 @@ number:
 button:
   - platform: template
     id: desk_position_up
+    internal: False
     name: "Desk position up"
     on_press:
       then:
