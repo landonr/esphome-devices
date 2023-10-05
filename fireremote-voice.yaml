@@ -26,10 +26,10 @@ wifi:
 
 external_components:
   - source:
-      # type: git
-      # url: https://github.com/ssieb/custom_components
-      type: local
-      path: ../ssieb_custom_components/components
+      type: git
+      url: https://github.com/ssieb/custom_components
+      # type: local
+      # path: ../ssieb_custom_components/components
     components: [ ip5306 ]
 
 packages:
