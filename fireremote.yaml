@@ -38,7 +38,7 @@ external_components:
     refresh: 0s
     #   type: local
     #   path: ../homeThing/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
