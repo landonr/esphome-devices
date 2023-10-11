@@ -156,6 +156,10 @@ switch:
     entity_id: "switch.oven_fan"
     name: "Oven Fan"
     id: oven_fan
+  - platform: template
+    id: dark_mode
+    name: "Dark Mode"
+    optimistic: true
 
 homeThingDisplayState:
   id: display_state_id
@@ -168,6 +172,7 @@ homeThingDisplayState:
   font_material_small: material_font_small
   launch_image: launch_image
   now_playing_max_lines: 10
+  dark_mode: dark_mode
 
 homeThingAppNowPlaying:
   id: now_playing
@@ -212,6 +217,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+      - id: dark_mode
+        type: switch
       - id: light_rgb_lights
         type: light
       - type: command

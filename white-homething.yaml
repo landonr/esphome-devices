@@ -97,6 +97,11 @@ light:
     entity_id: light.rgb_lights
     name: Color Lights 
 
+switch:
+  - platform: template
+    id: dark_mode
+    name: "Dark Mode"
+    optimistic: true
 
 homeThingDisplayState:
   id: display_state_id
@@ -108,6 +113,7 @@ homeThingDisplayState:
   font_material_large: material_font_large
   font_material_small: material_font_small
   launch_image: launch_image
+  dark_mode: dark_mode
 
 homeThingAppNowPlaying:
   id: now_playing
@@ -145,6 +151,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+      - id: dark_mode
+        type: switch
       - id: light_rgb_lights
         type: light
   screens:

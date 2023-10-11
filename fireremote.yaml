@@ -38,7 +38,7 @@ external_components:
     refresh: 0s
     #   type: local
     #   path: ../homeThing/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -125,6 +125,12 @@ homeThingAppNowPlaying:
   display: my_display
   display_state: display_state_id
 
+switch:
+  - platform: template
+    id: dark_mode
+    name: "Dark Mode"
+    optimistic: true
+
 homeThingDisplayState:
   id: display_state_id
   font_small: small_font
@@ -142,12 +148,22 @@ homeThingDisplayState:
   now_playing_max_lines: 5
   draw_now_playing_bottom_menu: true
   draw_battery_level: true
-  dark_mode: true
   draw_volume_level: false
   draw_header_time: true
+  dark_mode: dark_mode
+
+homeThingAppSnake:
+  id: snake
+  display: my_display
+  display_state: display_state_id
 
 homeThing:
   id: homeThingMenu
+  header:
+    time_id: esptime
+  apps: 
+    - now_playing
+    - snake
   settings:
     mode: rotary
     menu_rollback: true
@@ -165,6 +181,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+        - id: dark_mode
+          type: switch
         - type: command
           name: "feed lil freak"
           command:
