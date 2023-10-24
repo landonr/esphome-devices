@@ -26,17 +26,6 @@ web_server:
 
 # bluetooth_proxy:
 
-binary_sensor:
-  - platform: gpio
-    id: soil_dry
-    name: "${friendly_name} Sensor Soil Dry"
-    pin:
-      pcf8574: pcf8574_hub
-      number: 2
-      # inverted: True
-      mode:
-        input: true
-
 substitutions:
   friendly_name: "Growbox"
 
@@ -45,15 +34,36 @@ sensor:
     name: "${friendly_name} Uptime"
     update_interval: 10s
     id: growbox_uptime
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: 6.144
+    name: "${friendly_name} Soil Moisture`"
+    update_interval: 60s
+    id: soil_moisture
+    unit_of_measurement: "%"
+    filters:
+    - calibrate_linear:
+        method: least_squares
+        datapoints:
+        - 1.25 -> 100
+        - 3.32 -> 0
   - platform: aht10
     i2c_id: i2cfast
     update_interval: 1s
     temperature:
       name: "${friendly_name} dht20 Temperature"
       id: temperature
+      filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
     humidity:
       name: "${friendly_name} dht20 Humidity"
       id: humidity
+      filters:
+        - sliding_window_moving_average:
+            window_size: 10
+            send_every: 10
       on_value_range:
         - above: 70
           then:
@@ -69,23 +79,23 @@ sensor:
     name: "${friendly_name} Climate PID Result"
     type: RESULT
     internal: True
-    climate_id: pid_climate
+    climate_id: pid_climate_fan_cool
     id: pid_result
   - platform: pid
     name: "${friendly_name} Climate Fan Speed"
     type: COOL
-    climate_id: pid_climate
+    climate_id: pid_climate_fan_cool
     id: pid_cool
   - platform: pid
-    name: "${friendly_name} Climate PID Humidity Result"
+    name: "${friendly_name} Climate Humidity PID Result"
     type: RESULT
     internal: True
-    climate_id: pid_climate_humidity
+    climate_id: pid_climate_fan_cool_fan_dry
     id: pid_result_humidity
   - platform: pid
     name: "${friendly_name} Climate Fan Speed Humidity"
     type: COOL
-    climate_id: pid_climate_humidity
+    climate_id: pid_climate_fan_cool_fan_dry
     id: pid_cool_humidity
   - platform: template
     name: "${friendly_name} Fan Speed"
@@ -95,6 +105,9 @@ sensor:
     name: "${friendly_name} Dew Point"
     id: dew_point
     lambda: |-
+      if (!id(temperature).has_state() || !id(humidity).has_state()) {
+        return NAN;
+      }
       float dew_point_constant_a = 17.27;
       float dew_point_constant_b = 237.7;
       float alpha = ((dew_point_constant_a * id(temperature).state) / (dew_point_constant_b + id(temperature).state)) + log(id(humidity).state / 100.0);
@@ -107,6 +120,9 @@ sensor:
     name: "${friendly_name} VPD"
     id: vpd_sensor
     lambda: |-
+          if (!id(temperature).has_state() || !id(humidity).has_state()) {
+            return NAN;
+          }
           float tempValue = id(temperature).state;
           float humidityValue = id(humidity).state;
           // Calculate SVP
@@ -119,6 +135,22 @@ sensor:
     unit_of_measurement: "kPa"
     accuracy_decimals: 2
     update_interval: 10s
+  - platform: template
+    name: "${friendly_name} VPD Target"
+    id: vpd_target_sensor
+    lambda: |-
+          float tempValue = id(template_climate).target_temperature;
+          float humidityValue = id(climate_humidity).target_temperature;
+          // Calculate SVP
+          float svp = 610.78 * exp(tempValue / (tempValue + 237.3) * 17.2694);
+          // Convert SVP to kPa
+          svp = svp / 1000.0;
+          // Calculate VPD
+          float vpd = svp * (1.0 - (humidityValue / 100.0));
+          return vpd;
+    unit_of_measurement: "kPa"
+    accuracy_decimals: 2
+    update_interval: 1s
 climate:
   - platform: thermostat
     id: template_climate
@@ -133,59 +165,66 @@ climate:
       max_temperature: 30
     cool_action:
       - climate.control:
-          id: pid_climate_humidity
+          id: pid_climate_fan_cool_fan_dry
           mode: "OFF"
       - climate.control:
-          id: pid_climate
-          mode: COOL
-          target_temperature: 27°C
+          id: climate_humidity
+          mode: "HEAT"
+      - climate.control:
+          id: pid_climate_fan_cool
+          mode: "COOL"
     idle_action:
       - climate.control:
-          id: pid_climate_humidity
+          id: pid_climate_fan_cool_fan_dry
           mode: "OFF"
       - climate.control:
-          id: pid_climate
-          mode: COOL
-          target_temperature: 27°C
+          id: climate_humidity
+          mode: "HEAT"
+      - climate.control:
+          id: pid_climate_fan_cool
+          mode: "COOL"
     dry_action:
       - climate.control:
-          id: pid_climate
+          id: pid_climate_fan_cool
           mode: "OFF"
       - climate.control:
-          id: pid_climate_humidity
-          mode: COOL
+          id: climate_humidity
+          mode: "OFF"
+      - climate.control:
+          id: pid_climate_fan_cool_fan_dry
+          mode: "COOL"
           target_temperature: 50
     default_preset: Home
     on_boot_restore_from: memory
     preset:
       - name: Home
         mode: COOL
-        default_target_temperature_high: 27°C
+        default_target_temperature_high: 24.5°C
     on_control:
       - lambda: |-
-          auto call = id(pid_climate).make_call();
+          auto call = id(pid_climate_fan_cool).make_call();
           call.set_target_temperature(x.get_target_temperature());
           call.perform();
   - platform: pid
     internal: false
-    id: pid_climate_humidity
-    name: "${friendly_name} Climate PID Humidity Controller"
+    id: pid_climate_fan_cool_fan_dry
+    name: "${friendly_name} Climate Humidity PID Controller"
     sensor: humidity
     default_target_temperature: 50
     cool_output: template_humidity_output
     visual:
       min_temperature: 40
-      max_temperature: 60
+      max_temperature: 65
     control_parameters:
       kp: 0.25000
       ki: 0.00100
       kd: 0.15000
   - platform: pid
     internal: false
-    id: pid_climate
+    id: pid_climate_fan_cool
     name: "${friendly_name} Climate PID Controller"
     sensor: temperature
-    default_target_temperature: 27°C
+    default_target_temperature: 24.5°C
     cool_output: template_temperature_output
     visual:
       min_temperature: 23
@@ -197,12 +236,13 @@ climate:
   - platform: thermostat
     name: "${friendly_name} Climate Humidity Controller"
     sensor: humidity
+    id: climate_humidity
     min_heating_off_time: 30s
-    min_heating_run_time: 30s
+    min_heating_run_time: 10s
     min_idle_time: 30s
     visual:
       min_temperature: 40
-      max_temperature: 60
+      max_temperature: 65
     heat_action:
       - switch.turn_on: humiditySwitch
     idle_action:
@@ -215,6 +255,11 @@ climate:
     preset:
       - name: Home
         default_target_temperature_low: 40
+    on_control:
+      - lambda: |-
+          auto call = id(pid_climate_fan_cool_fan_dry).make_call();
+          call.set_target_temperature(x.get_target_temperature());
+          call.perform();
 
 switch:
   - platform: restart
@@ -224,16 +269,12 @@ switch:
     name: "${friendly_name} Switch Humidity"
     output: humidityOutput
     id: humiditySwitch
+    restore_mode: ALWAYS_OFF
   - platform: output
     name: "${friendly_name} Switch USB Fan"
     output: fanUSBOutput
     id: fanUSBSwitch
-
-pcf8574:
-  - id: 'pcf8574_hub'
-    address: 0x20
-    pcf8575: false
-    i2c_id: i2cslow
+    restore_mode: ALWAYS_OFF
 
 output:
   - platform: template
@@ -271,14 +312,6 @@ output:
     id: fanoutput
     frequency: 4000 Hz
     min_power: 0.1
-  - platform: gpio
-    id: ledpin
-    pin:
-      pcf8574: pcf8574_hub
-      number: 3
-      # inverted: True
-      mode:
-        output: true
     
 fan:
   - platform: speed
@@ -292,10 +325,7 @@ light:
     name: "${friendly_name} Light Grow"
     output: lightOutput
     id: growLight
-  - platform: binary
-    name: "${friendly_name} Light Status"
-    output: ledpin
-    id: ledLight
+    restore_mode: ALWAYS_OFF
 
 i2c:
   - id: i2cfast
@@ -308,6 +338,11 @@ i2c:
     scl: GPIO2
     frequency: 50khz
     scan: False
+
+ads1115:
+  - address: 0x48
+    i2c_id: i2cfast
+    id: ads1115_hub
 
 font:
   - file: "gfonts://Roboto"
@@ -324,6 +359,7 @@ time:
           lambda:
             if (!id(sntp_time).now().is_valid()) {
               id(growLight).turn_off().perform();
+              id(template_climate).make_call().set_mode("COOL").perform();
               return;
             }
             if (id(sntp_time).now().hour >= 5 && id(sntp_time).now().hour < 21) {
@@ -337,9 +373,9 @@ time:
             }
 
 display:
-  - platform: ssd1327_i2c
+  - platform: ssd1306_i2c
     i2c_id: i2cfast
-    model: "SSD1327 128x128"
+    model: "SH1106_128x64"
     address: 0x3C
     update_interval: 10s
     lambda: |-
@@ -352,14 +388,14 @@ display:
       it.printf(2, yPos, id(roboto), "humidity : %.1f%%", id(humidity).state);
 
       yPos = yPos + fontSize;
-      if (!id(pcf8574_hub).is_failed()) {
-        if (id(soil_dry).state) {
-          it.printf(2, yPos, id(roboto), "soil : dry");
+      if (!id(ads1115_hub).is_failed()) {
+        if (id(soil_moisture).state) {
+          it.printf(2, yPos, id(roboto), "soil : %.1f%%", id(soil_moisture).state);
         } else {
-          it.printf(2, yPos, id(roboto), "soil : wet");
+            it.printf(2, yPos, id(roboto), "soil : no state");
         }
       } else {
-        it.printf(2, yPos, id(roboto), "soil : unknown");
+        it.printf(2, yPos, id(roboto), "soil : error");
       }
 
       yPos = yPos + fontSize;
@@ -402,58 +438,58 @@ display:
       }
 
       yPos = yPos + fontSize;
-      switch (id(pid_climate).mode) {
+      switch (id(pid_climate_fan_cool).mode) {
         case CLIMATE_MODE_OFF:
-          it.printf(2, yPos, id(roboto), "climate : off %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : off %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_HEAT:
-          it.printf(2, yPos, id(roboto), "climate : heat %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : heat %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_HEAT_COOL:
-          it.printf(2, yPos, id(roboto), "climate : heat + cool %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : heat + cool %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_COOL:
-          it.printf(2, yPos, id(roboto), "climate : cool %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : cool %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_AUTO:
-          it.printf(2, yPos, id(roboto), "climate : auto %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : auto %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_DRY:
-          it.printf(2, yPos, id(roboto), "climate : dry %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : dry %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         case CLIMATE_MODE_FAN_ONLY:
-          it.printf(2, yPos, id(roboto), "climate : fan %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : fan %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
         default:
-          it.printf(2, yPos, id(roboto), "climate : unknown %.0f", id(pid_climate).target_temperature);
+          it.printf(2, yPos, id(roboto), "climate : unknown %.0f", id(pid_climate_fan_cool).target_temperature);
           break;
       }
 
       yPos = yPos + fontSize;
-      switch (id(pid_climate_humidity).mode) {
+      switch (id(pid_climate_fan_cool_fan_dry).mode) {
         case CLIMATE_MODE_OFF:
-          it.printf(2, yPos, id(roboto), "humidity : off %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : off %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_HEAT:
-          it.printf(2, yPos, id(roboto), "humidity : heat %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : heat %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_HEAT_COOL:
-          it.printf(2, yPos, id(roboto), "humidity : heat + cool %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : heat + cool %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_COOL:
-          it.printf(2, yPos, id(roboto), "humidity : cool %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : cool %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_AUTO:
-          it.printf(2, yPos, id(roboto), "humidity : auto %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : auto %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_DRY:
-          it.printf(2, yPos, id(roboto), "humidity : dry %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : dry %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         case CLIMATE_MODE_FAN_ONLY:
-          it.printf(2, yPos, id(roboto), "humidity : fan %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : fan %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
         default:
-          it.printf(2, yPos, id(roboto), "humidity : unknown %.0f", id(pid_climate_humidity).target_temperature);
+          it.printf(2, yPos, id(roboto), "humidity : unknown %.0f", id(pid_climate_fan_cool_fan_dry).target_temperature);
           break;
       }
 

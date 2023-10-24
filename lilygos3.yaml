@@ -11,7 +11,6 @@ esphome:
     - light.turn_on:
         id: backlight
         brightness: 100%
-        transition_length: 1s
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -44,7 +43,7 @@ external_components:
     refresh: 0s
       # type: local
       # path: ../homething/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -98,17 +97,24 @@ packages:
 
 substitutions:
   friendly_name: "s3 homething"
-  rotary_left_pin: "11"
-  rotary_right_pin: "13"
-  rotary_up_pin: "10"
-  rotary_down_pin: "12"
-  rotary_select_pin: "3"
-  rotary_pin_a: "1"
-  rotary_pin_b: "2"
+  # rotary_left_pin: "11"
+  # rotary_right_pin: "13"
+  # rotary_up_pin: "10"
+  # rotary_down_pin: "12"
+  # rotary_select_pin: "3"
+  # rotary_pin_a: "1"
+  # rotary_pin_b: "2"
+  rotary_left_pin: "GPIO1" # sw5
+  rotary_right_pin: "GPIO3" #sw3
+  rotary_up_pin: "GPIO2" # sw4
+  rotary_down_pin: "GPIO10" # sw2
+  rotary_select_pin: "GPIO11" # sw1
+  rotary_pin_a: "GPIO13"
+  rotary_pin_b: "GPIO12"
   screen_left_pin: "GPIO0"
   screen_right_pin: "GPIO14"
   battery_pin: "4"
-  log_level: "INFO"
+  log_level: "DEBUG"
 
 remote_transmitter:
   pin: GPIO21
@@ -160,6 +166,7 @@ switch:
     id: dark_mode
     name: "Dark Mode"
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
 
 homeThingDisplayState:
   id: display_state_id
@@ -191,10 +198,16 @@ homeThingAppCatToy:
   display: my_display
   display_state: display_state_id
 
+homeThingAppBreakout:
+  id: breakout
+  display: my_display
+  display_state: display_state_id
+
 homeThing:
   id: homeThingMenu
   apps: 
     - now_playing
+    - breakout
     - snake
     - cat_toy
   settings:

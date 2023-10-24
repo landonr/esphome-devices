@@ -29,7 +29,7 @@ external_components:
       # type: local
       # path: ../homething/components
     refresh: 0s
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -59,7 +59,8 @@ packages:
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
   # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
-  # fonts: !include ../homeThing/common/fonts-light.yaml
+  # fonts-light: !include ../homeThing/common/fonts-light.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # settings: !include ../homeThing/common/settings.yaml
   # images: !include ../homeThing/common/images.yaml
@@ -84,6 +85,7 @@ packages:
 
 substitutions:
   friendly_name: "white homething"
+  # log_level: DEBUG
 
 color:
   - id: my_primary_accent
@@ -102,6 +104,7 @@ switch:
     id: dark_mode
     name: "Dark Mode"
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
 
 homeThingDisplayState:
   id: display_state_id
@@ -114,27 +117,36 @@ homeThingDisplayState:
   font_material_small: material_font_small
   launch_image: launch_image
   dark_mode: dark_mode
+  draw_now_playing_bottom_menu: false
 
 homeThingAppNowPlaying:
   id: now_playing
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  # up_button: sw4
 
 homeThingAppSnake:
   id: snake
   display: my_display
   display_state: display_state_id
+  # up_button: sw4
+
+# homeThingAppBreakout:
+#   id: breakout
+#   display: my_display
+#   display_state: display_state_id
 
 homeThing:
   id: homeThingMenu
   settings:
     sleep_after: 14400
+    display_timeout_while_charging: 30
   sleep_switch: sleep_toggle
   backlight: backlight
-  boot:
-    api_connected: api_connected
-    media_player_group: media_group_component
+  # boot:
+  #   api_connected: api_connected
+  #   media_player_group: media_group_component
   header:
     time_id: esptime
   battery:
@@ -143,6 +155,7 @@ homeThing:
   apps: 
     - now_playing
     - snake
+    # - breakout
   display: my_display
   on_redraw:
     then:
@@ -221,7 +234,8 @@ display:
     dc_pin: GPIO16
     reset_pin: GPIO23
     rotation: 90
-    update_interval: 10s
+    update_interval: 3600s
+    backlight_pin: no
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;

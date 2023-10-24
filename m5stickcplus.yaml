@@ -44,7 +44,7 @@ external_components:
       # type: local
       # path: ../homeThing/components
     refresh: 0s
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppCatToy ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppBreakout ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -89,18 +89,32 @@ packages:
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # axp192: !include ../homeThing/common/m5stack-stickc/axp192.yaml # power management and screen backlight
+  # axp192-marty: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
   # sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
   # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
-  # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
+  # binary_sensor_voice: !include ../homeThing/common/m5stack-stickc/binary_sensor_voice.yaml # buttons
+  # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderCVoice.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
-  # log_level: DEBUG
+  log_level: INFO
+  large_heavy_font_size: "20"
+  large_font_size: "20"
+  medium_font_size: "14"
+  small_font_size: "12"
+  home_thing_logo_size: "48"
+  material_font_large_size: "16"
+  material_font_small_size: "14"
 
 spi:
   clk_pin: GPIO13
   mosi_pin: GPIO15
+
+light:
+  - platform: homeassistant_component
+    id: light_rgb_lights
+    entity_id: light.rgb_lights
+    name: Color Lights 
 
 homeThingDisplayState:
   id: display_state_id
@@ -112,6 +126,7 @@ homeThingDisplayState:
   font_material_small: material_font_small
   launch_image: launch_image
   draw_now_playing_bottom_menu: True
+  draw_battery_level: True
 
 homeThingAppNowPlaying:
   id: now_playing
@@ -119,22 +134,50 @@ homeThingAppNowPlaying:
   display: my_display
   display_state: display_state_id
 
+remote_transmitter:
+  pin: GPIO9
+  carrier_duty_percent: 50%
+  id: infrared
+
+homeThingAppBreakout:
+  id: breakout
+  display: my_display
+  display_state: display_state_id
+
+switch:
+- platform: restart
+  id: restart_switch
+  name: "${friendly_name} Restart"
+
 homeThing:
   id: homeThingMenu
+  settings:
+    sleep_after: 14400
+    display_timeout: 10
+    display_timeout_while_charging: 10
   apps: 
     - now_playing
-  settings:
-    mode: 3_button
+    - breakout
   sleep_switch: sleep_toggle
   backlight: backlight
   display_state: display_state_id
-  # battery:
-  #   battery_percent: battery_percent
-  #   charging: axp_charger
+  battery:
+    battery_percent: batteryPercent
+    charging: axp_charger
   display: my_display
   on_redraw:
     then:
       component.update: my_display
+  home_screen:
+    name: root
+    entities:
+      - type: command
+        name: "Morning Scene"
+        command:
+          - homeassistant.service:
+              service: script.warm
+      - id: light_rgb_lights
+        type: light
 
 display:
   - platform: st7789v
@@ -148,21 +191,3 @@ display:
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
-
-remote_receiver:
-  pin: GPIO32
-  dump: all
-
-i2s_audio:
-  id: bus_i2s
-  i2s_lrclk_pin: G26
-  i2s_bclk_pin: G0
-microphone:
-  - platform: i2s_audio
-    i2s_din_pin: GPIO34
-    i2s_audio_id: bus_i2s
-    adc_type: external
-    pdm: true
-    id: mic
-voice_assistant:
-  microphone: mic

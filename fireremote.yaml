@@ -2,16 +2,20 @@ esphome:
   name: fireremote
   platform: ESP32
   board: m5stack-fire
-  # on_boot:
-  #   priority: 600.0
-  #   then:
-  #     - delay: 45s
-  #     - if:
-  #         condition:
-  #           not:
-  #             - wifi.connected:
-  #         then:
-  #           - switch.turn_on: sleep_toggle
+  on_boot:
+    priority: 600.0
+    then:
+      - light.turn_on:
+          id: side_light
+          brightness: 100%
+          effect: Rainbow Effect
+      # - homeassistant.service:
+      #     service: button.press
+      #     data:
+      #       entity_id: "button.catfeeder_node_feed_single"
+      - delay: 3s
+      - light.turn_off:
+          id: side_light
 logger:
 api:
 ota:
@@ -38,7 +42,7 @@ external_components:
     refresh: 0s
     #   type: local
     #   path: ../homeThing/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
@@ -68,10 +72,12 @@ external_components:
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
+  # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
   # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
+  # side_light: !include ../homeThing/common/m5stack-fire/sidelight.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -86,7 +92,8 @@ packages:
       common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
-      common/m5stack-fire/binary_sensor.yaml, # buttons
+      # common/m5stack-fire/binary_sensor.yaml, # buttons
+      common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
       common/m5stack-fire/sidelight.yaml, # sidelight
       common/UnitEncoderC.yaml, # encoder
@@ -130,6 +137,7 @@ switch:
     id: dark_mode
     name: "Dark Mode"
     optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
 
 homeThingDisplayState:
   id: display_state_id
@@ -157,6 +165,17 @@ homeThingAppSnake:
   display: my_display
   display_state: display_state_id
 
+homeThingAppBreakout:
+  id: breakout
+  display: my_display
+  display_state: display_state_id
+
+light:
+  - platform: homeassistant_component
+    id: light_rgb_lights
+    entity_id: light.rgb_lights
+    name: Color Lights 
+
 homeThing:
   id: homeThingMenu
   header:
@@ -164,6 +183,7 @@ homeThing:
   apps: 
     - now_playing
     - snake
+    - breakout
   settings:
     mode: rotary
     menu_rollback: true
@@ -181,8 +201,8 @@ homeThing:
   home_screen:
     name: root
     entities:
-        - id: dark_mode
-          type: switch
+        - id: light_rgb_lights
+          type: light
         - type: command
           name: "feed lil freak"
           command:
@@ -207,6 +227,8 @@ homeThing:
     - name: Settings Screen
       show_version: True
       entities:
+        - id: dark_mode
+          type: switch
         - id: side_light
           type: light
         - id: backlight
