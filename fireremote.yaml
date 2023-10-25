@@ -45,11 +45,11 @@ external_components:
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
     refresh: 0s
   - source:
-      # type: git
-      # url: https://github.com/landonr/esphome-components
-      # ref: main
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+      # type: local
+      # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
