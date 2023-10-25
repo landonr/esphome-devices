@@ -28,13 +28,12 @@ external_components:
       ref: main
       # type: local
       # path: ../homething/components
-    refresh: 0s
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
+    refresh: 0s
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
       ref: main
-    refresh: 0s
       # type: local
       # path: ../local_components/components
     components: [
@@ -45,10 +44,13 @@ external_components:
       media_player_source_spotify,
       media_player_source_custom
     ]
+    refresh: 0s
   - source: github://pr#5214 # used to load images on compile
     components: [ image ]
+    refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font, external_files ]
+    refresh: 0s
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml

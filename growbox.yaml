@@ -37,7 +37,7 @@ sensor:
   - platform: ads1115
     multiplexer: 'A0_GND'
     gain: 6.144
-    name: "${friendly_name} Soil Moisture`"
+    name: "${friendly_name} Soil Moisture"
     update_interval: 60s
     id: soil_moisture
     unit_of_measurement: "%"
@@ -45,8 +45,18 @@ sensor:
     - calibrate_linear:
         method: least_squares
         datapoints:
-        - 1.25 -> 100
+        - 1.0 -> 100
         - 3.32 -> 0
+    - sliding_window_moving_average:
+        window_size: 15
+        send_every: 15
+  # - platform: ads1115
+  #   multiplexer: 'A0_GND'
+  #   gain: 6.144
+  #   name: "${friendly_name} Soil Moisture Raw"
+  #   update_interval: 60s
+  #   id: soil_moisture_raw
+  #   unit_of_measurement: "v"
   - platform: aht10
     i2c_id: i2cfast
     update_interval: 1s
@@ -357,7 +367,9 @@ time:
         minutes: '*'
         then:
           lambda:
-            if (!id(sntp_time).now().is_valid()) {
+            bool noTemp = !id(temperature).has_state() || !id(humidity).has_state();
+            bool noTime = !id(sntp_time).now().is_valid();
+            if (noTemp || noTime) {
               id(growLight).turn_off().perform();
               id(template_climate).make_call().set_mode("COOL").perform();
               return;
