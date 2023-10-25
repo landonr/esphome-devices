@@ -35,8 +35,10 @@ external_components:
       type: git
       url: https://github.com/landonr/esphome-axp192
       ref: lando/add-charging-indicator
-    # type: local
-    # path: ../axp192/components
+      # type: local
+      # path: ../axp192/components
+    refresh: 0s
+    components: [axp192]
   - source:
       type: git
       url: https://github.com/landonr/homeThing
