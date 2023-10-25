@@ -40,15 +40,14 @@ external_components:
       type: git
       url: https://github.com/landonr/homeThing
       ref: main
-    refresh: 0s
       # type: local
       # path: ../homething/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout ]
+    refresh: 0s
   - source:
       type: git
       url: https://github.com/landonr/esphome-components
       ref: main
-    refresh: 0s
       # type: local
       # path: ../local_components/components
     components: [
@@ -59,12 +58,19 @@ external_components:
       media_player_source_spotify,
       media_player_source_custom
     ]
-  - source: github://landonr/lilygo-tdisplays3-esphome
+    refresh: 0s
+  - source: 
+      type: git
+      url: https://github.com/landonr/lilygo-tdisplays3-esphome/
+      # ref: sept2023
+    refresh: 1d
     components: [tdisplays3]
   - source: github://pr#5214 # used to load images on compile
     components: [ image ]
+    refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font, external_files ]
+    refresh: 0s
 
 packages:
   home_media_player: !include homeConfig/media_player.yaml

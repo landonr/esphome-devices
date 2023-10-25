@@ -35,21 +35,21 @@ external_components:
       # type: local
       # path: ../ssieb_custom_components/components
     components: [ ip5306 ]
+    refresh: 0s
   - source:
       type: git
       url: https://github.com/landonr/homeThing
       ref: main
-    refresh: 0s
-    #   type: local
-    #   path: ../homeThing/components
+      # type: local
+      # path: ../homeThing/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
-  - source:
-      type: git
-      url: https://github.com/landonr/esphome-components
-      ref: main
     refresh: 0s
-  #     # type: local
-  #     # path: ../local_components/components
+  - source:
+      # type: git
+      # url: https://github.com/landonr/esphome-components
+      # ref: main
+      type: local
+      path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -59,6 +59,7 @@ external_components:
       media_player_source_custom,
       UnitEncoderC
     ]
+    refresh: 0s
   # - source:
   #     type: local
   #     path: ../local_components/components
