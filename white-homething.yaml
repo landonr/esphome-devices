@@ -49,7 +49,7 @@ external_components:
     components: [ image ]
     refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
-    components: [ font, external_files ]
+    components: [ font ]
     refresh: 0s
 
 packages:
@@ -91,9 +91,9 @@ substitutions:
 
 color:
   - id: my_primary_accent
-    red_int: 75
-    green_int: 45
-    blue_int: 209
+    red_int: 55
+    green_int: 35
+    blue_int: 229
 
 light:
   - platform: homeassistant_component
@@ -120,6 +120,8 @@ homeThingDisplayState:
   launch_image: launch_image
   dark_mode: dark_mode
   draw_now_playing_bottom_menu: false
+  colors:
+    accent_primary: my_primary_accent
 
 homeThingAppNowPlaying:
   id: now_playing

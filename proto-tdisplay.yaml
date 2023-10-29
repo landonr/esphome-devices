@@ -50,7 +50,7 @@ external_components:
     components: [ image ]
     refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
-    components: [ font, external_files ]
+    components: [ font ]
     refresh: 0s
 
 packages:

@@ -69,7 +69,7 @@ external_components:
   - source: github://pr#5214 # used to load images on compile
     components: [ image ]
   - source: github://pr#5254 # used to load fonts on compile
-    components: [ font, external_files ]
+    components: [ font ]
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
@@ -189,6 +189,7 @@ homeThing:
     mode: rotary
     menu_rollback: true
     menu_rollover: true
+    display_timeout_while_charging: 30
   sleep_switch: sleep_toggle
   backlight: backlight
   battery:
@@ -211,10 +212,10 @@ homeThing:
                 id: side_light
                 brightness: 100%
                 effect: Rainbow Effect
-            # - homeassistant.service:
-            #     service: button.press
-            #     data:
-            #       entity_id: "button.catfeeder_node_feed_single"
+            - homeassistant.service:
+                service: button.press
+                data:
+                  entity_id: "button.catfeeder_node_feed_single"
             - delay: 3s
             - light.turn_off:
                 id: side_light

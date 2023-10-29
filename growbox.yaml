@@ -203,7 +203,7 @@ climate:
       - climate.control:
           id: pid_climate_fan_cool_fan_dry
           mode: "COOL"
-          target_temperature: 50
+          target_temperature: 60
     default_preset: Home
     on_boot_restore_from: memory
     preset:

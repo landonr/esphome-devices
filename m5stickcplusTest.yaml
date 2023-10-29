@@ -25,7 +25,7 @@ external_components:
     refresh: 0s
   - source: github://pr#5254 # used to load images on compile
     refresh: 0s
-    components: [ font, external_files ]
+    components: [ font ]
   # - source:
   #     type: git
   #     url: https://github.com/esphome/esphome
