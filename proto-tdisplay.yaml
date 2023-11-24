@@ -46,7 +46,7 @@ external_components:
       media_player_source_custom
     ]
     refresh: 0s
-  - source: github://pr#5214 # used to load images on compile
+  # - source: github://pr#5214 # used to load images on compile
     # components: [ image ]
     # refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile

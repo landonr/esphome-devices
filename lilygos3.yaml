@@ -84,8 +84,8 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   # images: !include ../homeThing/common/images.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
-  fonts: !include ../homeThing/common/fonts-local.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts-local.yaml
+  # fonts: !include ../homeThing/common/fonts-local.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts-local.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
   # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
@@ -97,8 +97,8 @@ packages:
     ref: main
     files: [
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      # common/fonts-local.yaml, # default font
-      # common/icon_fonts-local.yaml, # material icons
+      common/fonts-local.yaml, # default font
+      common/icon_fonts-local.yaml, # material icons
       common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
       common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml, # used for button controls
       common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
