@@ -221,7 +221,8 @@ homeThingAppBreakout:
 
 image:
   id: launch_image
-  file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=f6a40dc8c712ca8c1f3a599ee15286283f197bd696f5f59b0d3481185fe14c4e&cache=b311e6b1cf141036"
+  file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
+  # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=f6a40dc8c712ca8c1f3a599ee15286283f197bd696f5f59b0d3481185fe14c4e&cache=b311e6b1cf141036"
   resize: 48x48
   type: RGB24
 

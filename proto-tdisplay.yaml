@@ -142,7 +142,7 @@ homeThing:
     time_id: esptime
   boot:
     api_connected: api_connected
-    media_player_group: media_group_component
+    media_players_loaded: media_players_loaded_sensor
 
 display:
   - platform: st7789v
