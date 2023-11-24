@@ -104,17 +104,17 @@ packages:
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
   # side_light: !include ../homeThing/common/m5stack-fire/sidelight.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
-  fonts: !include ../homeThing/common/fonts.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  images: !include ../homeThing/common/images.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  # images: !include ../homeThing/common/images.yaml
   # settings: !include ../homeThing/common/settings.yaml
   remote_package:
     url: https://github.com/landonr/homeThing
     ref: main
     files: [
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      # common/fonts.yaml, # default font
-      # common/icon_fonts.yaml, # material icons
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
       # common/m5stack-fire/binary_sensor.yaml, # buttons
@@ -122,7 +122,7 @@ packages:
       common/m5stack-fire/backlight.yaml, # backlight
       # common/m5stack-fire/sidelight.yaml, # sidelight
       common/UnitEncoderC.yaml, # encoder
-      # common/images.yaml, # boot screen image
+      common/images.yaml, # boot screen image
       common/settings.yaml, # settings screen
     ]
     refresh: 0s
