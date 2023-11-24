@@ -54,4 +54,5 @@ jobs:
       - name: Build esphome
         uses: esphome/build-action@v1.8.0
         with:
+          version: dev
           yaml_file: ${{ matrix.name }}
