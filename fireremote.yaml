@@ -1,7 +1,5 @@
 esphome:
   name: fireremote
-  platform: ESP32
-  board: m5stack-fire
   on_boot:
     priority: 600.0
     then:
