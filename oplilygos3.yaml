@@ -82,8 +82,8 @@ packages:
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
-  ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
-  ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
+  # ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
+  # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
   # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
   # s3_backlight: !include ../homeThing/common/tdisplay-s3/backlight.yaml
@@ -96,8 +96,8 @@ packages:
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
-      # common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml, # used for button controls
-      # common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
+      common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml, # used for button controls
+      common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
       common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
       common/tdisplay-s3/backlight.yaml, # backlight
       common/settings.yaml, # settings screen
