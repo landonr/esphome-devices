@@ -63,10 +63,10 @@ external_components:
       media_player_source_custom,
       MiniEncoderC
     ]
-  - source: github://pr#5214 # used to load images on compile
-    components: [ image ]
+  # - source: github://pr#5214 # used to load images on compile
+  #   components: [ image ]
   - source: github://pr#5254 # used to load fonts on compile
-    components: [ font, external_files ]
+    components: [ font ]
 
 
 packages:
@@ -84,7 +84,7 @@ packages:
       common/images.yaml # boot screen image
     ]
     refresh: 0s
-  home_media_player: !include homeConfig/media_player_light.yaml
+  # home_media_player: !include homeConfig/media_player_light.yaml
   home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
@@ -118,6 +118,12 @@ light:
     entity_id: light.rgb_lights
     name: Color Lights 
 
+color:
+  - id: my_primary_accent
+    red_int: 230
+    green_int: 30
+    blue_int: 2
+
 homeThingDisplayState:
   id: display_state_id
   font_small: small_font
@@ -129,6 +135,65 @@ homeThingDisplayState:
   launch_image: launch_image
   draw_now_playing_bottom_menu: True
   draw_battery_level: True
+  colors:
+    accent_primary: my_primary_accent
+media_player_source_sonos:
+  id: sonos
+
+media_player_source_spotify:
+  id: spotty
+
+media_player_source_custom:
+  - id: fav_playlists
+    name: playlists
+    sources:
+      name: liked songs
+      media_id: spotify:user:t5vciyb6zy94uerxdhb0mopfn:collection
+      media_type: playlist
+  - id: youtube_videos
+    name: youtube videos
+    sources:
+      - name: fred again boilerroom
+        media_id: c0-hvjV2A5Y
+        media_type: app
+        app: youtube
+      - name: 100 gecs boilerroom
+        media_id: 8NWHnWbpxmc
+        media_type: app
+        app: youtube
+      - name: young marco dekmantel 2017
+        media_id: 1_vXiL_qD5c
+        media_type: app
+        app: youtube
+      - name: fred again, skrilly, four tet coachella
+        media_id: dFfC92iBxNw
+        media_type: app
+        app: youtube
+
+media_player:
+  - platform: homeassistant_media_player
+    name: Beam
+    entity_id: "media_player.beam"
+    id: media_player_beam
+    type: speaker
+    sources:
+      - id: sonos
+        type: sonos
+      - id: spotty
+        type: spotify
+      - id: fav_playlists
+        type: custom
+    commands:
+      name: "group all"
+      command:
+        - homeassistant.service:
+            service: script.sonos_group_all
+
+homeassistant_media_player:
+  id: media_group_component
+  media_players:
+    - id: media_player_beam
+      type: speaker
 
 homeThingAppNowPlaying:
   id: now_playing
@@ -167,19 +232,21 @@ homeThing:
     battery_percent: batteryPercent
     charging: axp_charger
   display: my_display
+  boot:
+    api_connected: api_connected
   on_redraw:
     then:
       component.update: my_display
   home_screen:
     name: root
     entities:
+      - id: light_rgb_lights
+        type: light
       - type: command
         name: "Morning Scene"
         command:
           - homeassistant.service:
               service: script.warm
-      - id: light_rgb_lights
-        type: light
 
 display:
   - platform: st7789v

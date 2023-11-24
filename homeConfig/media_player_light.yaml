@@ -110,6 +110,8 @@ media_player:
 
 homeassistant_media_player:
   id: media_group_component
+  finished_loading:
+    id: media_players_loaded_sensor
   media_players:
     - id: media_player_beam
       type: speaker

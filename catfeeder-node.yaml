@@ -1,15 +1,6 @@
 esphome:
   name: catfeeder-node
   friendly_name: catfeeder-node
-  on_boot:
-    priority: 600
-    then:
-      - switch.template.publish:
-          id: skip_next_meal
-          state: Off
-      - sensor.template.publish:
-          id: feeding_active_public
-          state: 0
 
 esp32:
   board: nodemcu-32s
@@ -25,7 +16,10 @@ api:
   services:
     - service: feed_cat
       then:
-        - button.press: feed_single_internal
+      - script.execute:
+          id: feed_script
+          force: true
+          servings_current: 1
 
 web_server:
   port: 80
@@ -47,37 +41,37 @@ captive_portal:
  
 output:
   - platform: ledc
-    pin: GPIO2
-    frequency: 1000 Hz
+    pin: GPIO23
+    # frequency: 1000 Hz
     id: pwm_output
   - platform: ledc
-    pin: GPIO5
-    frequency: 1000 Hz
+    pin: GPIO22
+    # frequency: 1000 Hz
     id: pwm_output2
-  - platform: ledc
-    pin: GPIO4
-    frequency: 1000 Hz
-    id: motor_enable
+  # - platform: ledc
+  #   pin: GPIO4
+  #   frequency: 1000 Hz
+  #   id: motor_enable
 
 fan:
   - platform: hbridge
-    id: my_fan
+    id: serving_motor
     name: "Cat Feeder"
     pin_a: pwm_output
     pin_b: pwm_output2
-    enable_pin: motor_enable
+    # enable_pin: motor_enable
     # decay_mode: slow
-    internal: True
+    # internal: True
     restore_mode: ALWAYS_OFF 
     on_turn_on:
       - fan.turn_on: 
-          id: my_fan
-          speed: 1
+          id: serving_motor
+          speed: 100
 
 binary_sensor:
   - platform: gpio
     pin:
-      number: GPIO21
+      number: GPIO15
       mode:
         input: true
         pullup: true
@@ -85,15 +79,6 @@ binary_sensor:
     id: feed_clicker
     name: "Feed Clicker"
     internal: True
-  - platform: template
-    name: "Feeding"
-    internal: True
-    id: feeding_active
-    on_state:
-      then:
-      - sensor.template.publish:
-          id: feeding_active_public
-          state: !lambda 'return x;'
 
 switch:
   - platform: restart
@@ -107,7 +92,6 @@ switch:
     name: "Calculate servings by refill"
     id: calculate_by_refill
     optimistic: True
-    restore_mode: RESTORE_DEFAULT_OFF
 
 number:
   - platform: template
@@ -214,6 +198,11 @@ number:
     max_value: 10
     step: 1
     internal: true
+    on_value:
+      then:
+      - sensor.template.publish:
+          id: active_servings_sensor
+          state: !lambda return x;
   - platform: template
     name: "Bonus treats internal"
     id: bonus_treats_internal
@@ -223,6 +212,71 @@ number:
     restore_value: True
     step: 1
     internal: true
+
+script:
+  - id: feed_script
+    parameters:
+      servings_current: int
+      force: bool
+    then:
+      - if:
+          condition:
+            or:
+              - switch.is_off: skip_next_meal
+              - lambda: !lambda return force;
+          then:
+            - number.set:
+                id: active_servings
+                value: !lambda 'return servings_current;'
+            - while:
+                condition:
+                  lambda: |-
+                    return id(active_servings).state > 0;
+                then:
+                - logger.log:
+                    format: "Feeding meal active= %d, total= %d, skip=%d"
+                    args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state' ]
+                - sensor.template.publish:
+                    id: active_servings_sensor
+                    state: !lambda 'return id(active_servings).state;'
+                - fan.turn_on: 
+                    id: serving_motor
+                - if:
+                    condition:
+                      binary_sensor.is_on: feed_clicker
+                    then:
+                    - wait_until:
+                        binary_sensor.is_off: feed_clicker
+                    - wait_until:
+                        binary_sensor.is_on: feed_clicker
+                    - wait_until:
+                        binary_sensor.is_off: feed_clicker
+                    - fan.turn_off: serving_motor
+                    else:
+                    - wait_until:
+                        binary_sensor.is_on: feed_clicker
+                    - wait_until:
+                        binary_sensor.is_off: feed_clicker
+                    - fan.turn_off: serving_motor
+                - number.increment: servings_today
+                - number.increment: servings_since_refill
+                - number.increment: servings_total
+                - number.decrement: active_servings
+                - text_sensor.template.publish:
+                    id: last_feed
+                    state: !lambda |-
+                      auto timeSting = id(sntp_time).now().strftime("%c");
+                      return timeSting;
+                - delay: 1s
+            - number.to_min: active_servings
+      - if:
+          condition:
+            lambda: !lambda return !force;
+          then:
+          - logger.log: "Resetting skip next meal"
+          - switch.template.publish:
+              id: skip_next_meal
+              state: OFF
 
 button:
   - platform: template
@@ -259,7 +313,10 @@ button:
     id: feed_single
     on_press:
       then:
-      - button.press: feed_single_internal
+      - script.execute:
+          id: feed_script
+          force: true
+          servings_current: 1
       - number.increment: bonus_treats_internal
   - platform: template
     name: Feed Meal
@@ -269,89 +326,13 @@ button:
       - switch.template.publish:
           id: skip_next_meal
           state: Off
-      - button.press: feed_meal_internal
+      - script.execute:
+          id: feed_script
+          force: true
+          servings_current: !lambda 'return id(servings).state;'
       - switch.template.publish:
           id: skip_next_meal
           state: On
-  - platform: template
-    name: Feed Meal Internal
-    internal: True
-    id: feed_meal_internal
-    on_press:
-      then:
-      - logger.log:
-          format: "Feeding meal active= %d, total= %d, skip=%d"
-          args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state' ]
-      - if:
-          condition:
-            switch.is_off: skip_next_meal
-          then:
-          - while:
-              condition:
-                lambda: |-
-                  return id(active_servings).state < id(servings).state;
-              then:
-                - logger.log:
-                    format: "Feeding serving %d of %d"
-                    args: [ 'id(active_servings).state', 'id(servings).state' ]
-                - binary_sensor.template.publish:
-                    id: feeding_active
-                    state: ON
-                - button.press: feed_single_internal
-                - wait_until:
-                    binary_sensor.is_off: feeding_active
-                - number.increment: active_servings
-                - delay: 1s
-          - number.to_min: active_servings
-          else:
-          - logger.log: "Not feeding meal because skip next meal is on"
-          - switch.template.publish:
-              id: skip_next_meal
-              state: OFF
-  - platform: template
-    name: Feed Single
-    internal: True
-    id: feed_single_internal
-    on_press:
-      then:
-      - logger.log:
-          format: "Feeding today=%d, since refill=%d, total=%d"
-          args: [ 'id(servings_today).state', 'id(servings_since_refill).state', 'id(servings_total).state' ]
-      - binary_sensor.template.publish:
-          id: feeding_active
-          state: ON
-      - fan.turn_on: 
-          id: my_fan
-          speed: 1
-      - if:
-          condition:
-            binary_sensor.is_on: feed_clicker
-          then:
-          - wait_until:
-              binary_sensor.is_off: feed_clicker
-          - wait_until:
-              binary_sensor.is_on: feed_clicker
-          - wait_until:
-              binary_sensor.is_off: feed_clicker
-          - fan.turn_off: my_fan
-          else:
-          - wait_until:
-              binary_sensor.is_on: feed_clicker
-          - wait_until:
-              binary_sensor.is_off: feed_clicker
-          - fan.turn_off: my_fan
-      - number.increment: servings_today
-      - number.increment: servings_since_refill
-      - number.increment: servings_total
-      - text_sensor.template.publish:
-          id: last_feed
-          state: !lambda |-
-            auto timeSting = id(sntp_time).now().strftime("%c");
-            return timeSting;
-      - binary_sensor.template.publish:
-          id: feeding_active
-          state: OFF
-
 
 time:
   - platform: sntp
@@ -370,21 +351,30 @@ time:
         minutes: 0
         hours: 4
         then:
-          - button.press: feed_meal_internal
+          - script.execute:
+              id: feed_script
+              force: false
+              servings_current: !lambda 'return id(servings).state;'
   - platform: sntp
     on_time:
       - seconds: 0
         minutes: 45
         hours: 8
         then:
-          - button.press: feed_meal_internal
+          - script.execute:
+              id: feed_script
+              force: false
+              servings_current: !lambda 'return id(servings).state;'
   - platform: sntp
     on_time:
       - seconds: 0
         minutes: 30
         hours: 19
         then:
-          - button.press: feed_meal_internal
+          - script.execute:
+              id: feed_script
+              force: false
+              servings_current: !lambda 'return id(servings).state;'
 
 text_sensor:
   - platform: template
@@ -428,12 +418,14 @@ text_sensor:
       return std::to_string(hour12) + ":00 " + period;
 sensor:
   - platform: template
-    name: "Feeding active"
-    id: feeding_active_public
+    name: "Active Servings"
+    id: active_servings_sensor
+    state_class: "measurement"
   - platform: template
     name: "Servings per day"
     id: servings_per_day
     state_class: "measurement"
+    update_interval: 1s
     lambda: !lambda |-
       return id(grams_per_day).state / id(grams_per_serving).state;
   - platform: template
