@@ -1,5 +1,5 @@
 esphome:
-  name: fireremote
+  name: fireremote-voice
   platform: ESP32
   board: m5stack-fire
   # on_boot:
