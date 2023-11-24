@@ -20,9 +20,9 @@ wifi:
     password: !secret wifi_fallback_password
 
 external_components:
-  - source: github://pr#5214 # used to load images on compile
-    components: [ image ]
-    refresh: 0s
+  # - source: github://pr#5214 # used to load images on compile
+  #   components: [ image ]
+  #   refresh: 0s
   - source: github://pr#5254 # used to load images on compile
     refresh: 0s
     components: [ font ]

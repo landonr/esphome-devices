@@ -9,6 +9,10 @@ esphome:
           id: side_light
           brightness: 100%
           effect: Rainbow Effect
+      - light.turn_on:
+          id: strip_light
+          brightness: 100%
+          effect: Snow
       # - homeassistant.service:
       #     service: button.press
       #     data:
@@ -16,6 +20,15 @@ esphome:
       - delay: 3s
       - light.turn_off:
           id: side_light
+
+esp32:
+  board: m5stack-fire
+  framework:
+    type: arduino
+  # framework:
+  #   type: esp-idf
+  #   version: recommended
+
 logger:
 api:
 ota:
@@ -30,26 +43,26 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/ssieb/custom_components
-      # type: local
-      # path: ../ssieb_custom_components/components
+      # type: git
+      # url: https://github.com/ssieb/custom_components
+      type: local
+      path: ../ssieb_custom_components/components
     components: [ ip5306 ]
     refresh: 0s
   - source:
-      type: git
-      url: https://github.com/landonr/homeThing
-      ref: main
-      # type: local
-      # path: ../homeThing/components
+      # type: git
+      # url: https://github.com/landonr/homeThing
+      # ref: main
+      type: local
+      path: ../homeThing/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
     refresh: 0s
   - source:
-      type: git
-      url: https://github.com/landonr/esphome-components
-      ref: main
-      # type: local
-      # path: ../local_components/components
+      # type: git
+      # url: https://github.com/landonr/esphome-components
+      # ref: main
+      type: local
+      path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -66,39 +79,50 @@ external_components:
   #   components: [
   #     UnitEncoderC
   #   ]
-  - source: github://pr#5214 # used to load images on compile
-    components: [ image ]
-  - source: github://pr#5254 # used to load fonts on compile
+
+  # - source: github://pr#5214 # used to load images on compile
+  # - source: # used to load fonts on compile
+  #     type: local
+  #     path: ../compile-online-image/esphome/components/
+  #   components: [ image ]
+  #   refresh: 0s
+
+  # - source: github://pr#5254 # used to load fonts on compile
+  - source: # used to load fonts on compile
+      type: local
+      path: ../compile-online-image/esphome/components/
     components: [ font ]
+    refresh: 0s
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
-  # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
+  binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
+  # unit_encoder: !include ../homeThing/common/UnitEncoderC.yaml
   # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
   # side_light: !include ../homeThing/common/m5stack-fire/sidelight.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
-  # fonts: !include ../homeThing/common/fonts.yaml
-  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # images: !include ../homeThing/common/images.yaml
+  fonts: !include ../homeThing/common/fonts.yaml
+  icon_fonts: !include ../homeThing/common/icon_fonts.yaml
+  images: !include ../homeThing/common/images.yaml
   # settings: !include ../homeThing/common/settings.yaml
   remote_package:
     url: https://github.com/landonr/homeThing
     ref: main
     files: [
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      common/fonts.yaml, # default font
-      common/icon_fonts.yaml, # material icons
+      # common/fonts.yaml, # default font
+      # common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
       common/m5stack-fire/sleep.yaml, # deep sleep
       # common/m5stack-fire/binary_sensor.yaml, # buttons
-      common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
+      # common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
-      common/m5stack-fire/sidelight.yaml, # sidelight
+      # common/m5stack-fire/sidelight.yaml, # sidelight
       common/UnitEncoderC.yaml, # encoder
-      common/images.yaml, # boot screen image
+      # common/images.yaml, # boot screen image
       common/settings.yaml, # settings screen
     ]
     refresh: 0s
@@ -176,7 +200,49 @@ light:
     id: light_rgb_lights
     entity_id: light.rgb_lights
     name: Color Lights 
-
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO15
+    num_leds: 10
+    rmt_channel: 1
+    chipset: SK6812
+    name: "${friendly_name} Remote Light"
+    restore_mode: ALWAYS_OFF
+    id: side_light
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+          name: Rainbow Effect
+          speed: 20
+          width: 15
+  - platform: esp32_rmt_led_strip
+    rgb_order: RGB
+    pin: GPIO26
+    num_leds: 33
+    rmt_channel: 2
+    chipset: WS2812
+    name: "${friendly_name} Strip Light"
+    restore_mode: ALWAYS_OFF
+    id: strip_light
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+          name: Rainbow Effect
+          speed: 10
+          width: 50
+      - addressable_color_wipe:
+          name: Snow
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: true
 homeThing:
   id: homeThingMenu
   header:
@@ -187,14 +253,15 @@ homeThing:
     - breakout
   settings:
     mode: rotary
-    menu_rollback: true
-    menu_rollover: true
     display_timeout_while_charging: 30
   sleep_switch: sleep_toggle
   backlight: backlight
   battery:
     battery_percent: battery_percent
     charging: connected
+  boot:
+    api_connected: api_connected
+    media_players_loaded: media_players_loaded_sensor
   display: my_display
   display_state: display_state_id
   on_redraw:
@@ -203,8 +270,6 @@ homeThing:
   home_screen:
     name: root
     entities:
-        - id: light_rgb_lights
-          type: light
         - type: command
           name: "feed lil freak"
           command:
@@ -219,6 +284,20 @@ homeThing:
             - delay: 3s
             - light.turn_off:
                 id: side_light
+        - type: command
+          name: "feed full meal"
+          command:
+            - light.turn_on:
+                id: side_light
+                brightness: 100%
+                effect: Rainbow Effect
+            - homeassistant.service:
+                service: button.press
+                data:
+                  entity_id: "button.catfeeder_node_feed_meal"
+            - delay: 3s
+            - light.turn_off:
+                id: side_light
         - type: text_sensor
           id: servings_today
         - type: text_sensor
@@ -226,6 +305,29 @@ homeThing:
         - type: text_sensor
           id: last_feed
   screens:
+    - name: Lights Screen
+      entities:
+        - id: light_rgb_lights
+          type: light
+        - id: strip_light
+          type: light
+        - type: command
+          name: "color lights"
+          command:
+            - homeassistant.service:
+                service: script.colors
+        - type: command
+          name: "hell lights"
+          command:
+            - homeassistant.service:
+                service: scene.turn_on
+                data:
+                  entity_id: "scene.hell"
+        - type: command
+          name: "lights off"
+          command:
+            - homeassistant.service:
+                service: script.off_script
     - name: Settings Screen
       show_version: True
       entities:

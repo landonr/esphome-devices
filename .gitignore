@@ -94,3 +94,4 @@ secrets.yaml
 *.pyc
 *:Zone.Identifier
 .vscode/c_cpp_properties.json
+TFT_eSPI

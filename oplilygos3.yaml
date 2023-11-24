@@ -1,5 +1,5 @@
 esphome:
-  name: "lilygos3"
+  name: "proto-s3"
   platformio_options:
     board_build.f_flash: 80000000L
     board_upload.flash_size: 16MB
@@ -17,7 +17,9 @@ esp32:
   variant: esp32s3
   framework:
     type: arduino
-  flash_size: 16MB
+  # framework:
+  #   type: esp-idf
+  #   version: recommended
 
 # Enable logging
 logger:
@@ -38,19 +40,19 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/landonr/homeThing
-      ref: main
-      # type: local
-      # path: ../homething/components
+      # type: git
+      # url: https://github.com/landonr/homeThing
+      # ref: main
+      type: local
+      path: ../homething/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout ]
     refresh: 0s
   - source:
-      type: git
-      url: https://github.com/landonr/esphome-components
-      ref: main
-      # type: local
-      # path: ../local_components/components
+      # type: git
+      # url: https://github.com/landonr/esphome-components
+      # ref: main
+      type: local
+      path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -66,28 +68,22 @@ external_components:
       # ref: sept2023
     refresh: 1d
     components: [tdisplays3]
-  # - source: github://pr#5214
-  # - source: # used to load images on compile
-  #     type: local
-  #     path: ../compile-online-image/esphome/components/
+  # - source: github://pr#5214 # used to load images on compile
   #   components: [ image ]
   #   refresh: 0s
-  # - source: github://pr#5254
-  - source: # used to load fonts on compile
-      type: local
-      path: ../compile-online-image/esphome/components/
+  - source: github://pr#5254 # used to load fonts on compile
     components: [ font ]
     refresh: 0s
 
 packages:
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
-  # images: !include ../homeThing/common/images.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
-  fonts: !include ../homeThing/common/fonts-local.yaml
-  icon_fonts: !include ../homeThing/common/icon_fonts-local.yaml
+  # fonts: !include ../homeThing/common/fonts.yaml
+  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
-  # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
+  ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
+  ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
   # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
   # s3_backlight: !include ../homeThing/common/tdisplay-s3/backlight.yaml
@@ -97,11 +93,11 @@ packages:
     ref: main
     files: [
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      # common/fonts-local.yaml, # default font
-      # common/icon_fonts-local.yaml, # material icons
+      common/fonts.yaml, # default font
+      common/icon_fonts.yaml, # material icons
       common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
-      common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml, # used for button controls
-      common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
+      # common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml, # used for button controls
+      # common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
       common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
       common/tdisplay-s3/backlight.yaml, # backlight
       common/settings.yaml, # settings screen
@@ -110,40 +106,37 @@ packages:
     refresh: 0s
 
 substitutions:
-  friendly_name: "s3 homething"
+  friendly_name: "s3 proto"
   # rotary_left_pin: "11"
   # rotary_right_pin: "13"
   # rotary_up_pin: "10"
   # rotary_down_pin: "12"
   # rotary_select_pin: "3"
-  # rotary_pin_a: "1"
-  # rotary_pin_b: "2"
-  rotary_left_pin: "GPIO1" # sw5
-  rotary_right_pin: "GPIO3" #sw3
-  rotary_up_pin: "GPIO2" # sw4
-  rotary_down_pin: "GPIO10" # sw2
-  rotary_select_pin: "GPIO11" # sw1
-  rotary_pin_a: "GPIO13"
-  rotary_pin_b: "GPIO12"
+  rotary_pin_a: "2"
+  rotary_pin_b: "1"
   screen_left_pin: "GPIO0"
   screen_right_pin: "GPIO14"
   battery_pin: "4"
-  log_level: "INFO"
+  # log_level: "DEBUG"
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO3 # WS
+  i2s_bclk_pin: GPIO2 # SCK
+  # i2s_mclk_pin: GPIO8 # MCLK
+
+microphone:
+  - platform: i2s_audio
+    id: external_mic
+    i2s_din_pin: GPIO1 # SD
+    adc_type: external
+    pdm: false
+    bits_per_sample: 32bit
 
 remote_transmitter:
-  pin: GPIO21
+  pin: GPIO5
   # Infrared remotes use a 50% carrier signal
   carrier_duty_percent: 50%
   id: infrared
-
-image:
-  id: launch_image
-  # file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/homeThingLogo.svg"
-  file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/lights.jpg"
-  # file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
-  # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=a955fc758234e7ac5d9e484b5dc401970113a347dc2de2c5f4f1a70ab4fde614&cache=45ec98127e9e4fe0"
-  resize: 48x48
-  type: TRANSPARENT_BINARY
 
 light:
   - platform: homeassistant_component
@@ -225,6 +218,12 @@ homeThingAppBreakout:
   id: breakout
   display: my_display
   display_state: display_state_id
+
+image:
+  id: launch_image
+  file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=f6a40dc8c712ca8c1f3a599ee15286283f197bd696f5f59b0d3481185fe14c4e&cache=b311e6b1cf141036"
+  resize: 48x48
+  type: RGB24
 
 homeThing:
   id: homeThingMenu

@@ -29,11 +29,52 @@ web_server:
 substitutions:
   friendly_name: "Growbox"
 
+script:
+  - id: display_update_script
+    mode: restart
+    then:
+      - switch.turn_on: displayOn
+      - component.update: my_display
+      - delay: 5s
+      - switch.turn_off: displayOn
+      - sensor.rotary_encoder.set_value:
+          id: rotary
+          value: 0
+      - component.update: my_display
+
 sensor:
+  - platform: rotary_encoder
+    filters:
+    - throttle: 0.01s
+    name: "Rotary Encoder"
+    internal: true
+    min_value: 0
+    max_value: 50
+    restore_mode: ALWAYS_ZERO
+    pin_a:
+      number: 17
+      mode:
+        input: true
+        pullup: true
+    pin_b:
+      number: 5
+      mode:
+        input: true
+        pullup: true
+    on_clockwise:
+      then:
+        script.execute: display_update_script
+    on_anticlockwise:
+      then:
+        script.execute: display_update_script
+    id: rotary
   - platform: uptime
     name: "${friendly_name} Uptime"
     update_interval: 10s
     id: growbox_uptime
+
+# Soil Moisture Sensor
+
   - platform: ads1115
     multiplexer: 'A0_GND'
     gain: 6.144
@@ -41,6 +82,7 @@ sensor:
     update_interval: 60s
     id: soil_moisture
     unit_of_measurement: "%"
+    accuracy_decimals: 1
     filters:
     - calibrate_linear:
         method: least_squares
@@ -48,8 +90,8 @@ sensor:
         - 1.0 -> 100
         - 3.32 -> 0
     - sliding_window_moving_average:
-        window_size: 15
-        send_every: 15
+        window_size: 5
+        send_every: 5
   # - platform: ads1115
   #   multiplexer: 'A0_GND'
   #   gain: 6.144
@@ -57,23 +99,43 @@ sensor:
   #   update_interval: 60s
   #   id: soil_moisture_raw
   #   unit_of_measurement: "v"
+
+# DHT20 External Sensor
+  - platform: template
+    name: "${friendly_name} dht20 Temperature"
+    lambda: |-
+      return id(temperature_internal).state;
+    update_interval: 5s
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+  - platform: template
+    name: "${friendly_name} dht20 Humidity"
+    lambda: |-
+      return id(humidity_internal).state;
+    update_interval: 5s
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+
+# DHT20 Internal Sensor
   - platform: aht10
-    i2c_id: i2cfast
-    update_interval: 1s
+    i2c_id: i2cslow
+    update_interval: 0.5s
     temperature:
-      name: "${friendly_name} dht20 Temperature"
-      id: temperature
+      internal: True
+      name: "${friendly_name} dht20 Temperature Internal"
+      id: temperature_internal
       filters:
         - sliding_window_moving_average:
-            window_size: 10
-            send_every: 10
+            window_size: 4
+            send_every: 4
     humidity:
-      name: "${friendly_name} dht20 Humidity"
-      id: humidity
+      name: "${friendly_name} dht20 Humidity Internal"
+      id: humidity_internal
+      internal: True
       filters:
         - sliding_window_moving_average:
-            window_size: 10
-            send_every: 10
+            window_size: 4
+            send_every: 4
       on_value_range:
         - above: 70
           then:
@@ -85,6 +147,8 @@ sensor:
           - climate.control:
               id: template_climate
               mode: AUTO
+
+# Climate Sensor
   - platform: pid
     name: "${friendly_name} Climate PID Result"
     type: RESULT
@@ -111,16 +175,18 @@ sensor:
     name: "${friendly_name} Fan Speed"
     id: fan_speed
     unit_of_measurement: "%"
+
+# VPD Sensor
   - platform: template
     name: "${friendly_name} Dew Point"
     id: dew_point
     lambda: |-
-      if (!id(temperature).has_state() || !id(humidity).has_state()) {
+      if (!id(temperature_internal).has_state() || !id(humidity_internal).has_state()) {
         return NAN;
       }
       float dew_point_constant_a = 17.27;
       float dew_point_constant_b = 237.7;
-      float alpha = ((dew_point_constant_a * id(temperature).state) / (dew_point_constant_b + id(temperature).state)) + log(id(humidity).state / 100.0);
+      float alpha = ((dew_point_constant_a * id(temperature_internal).state) / (dew_point_constant_b + id(temperature_internal).state)) + log(id(humidity_internal).state / 100.0);
       float dew_point = (dew_point_constant_b * alpha) / (dew_point_constant_a - alpha);
       return dew_point;
     unit_of_measurement: "°C"
@@ -130,11 +196,11 @@ sensor:
     name: "${friendly_name} VPD"
     id: vpd_sensor
     lambda: |-
-          if (!id(temperature).has_state() || !id(humidity).has_state()) {
+          if (!id(temperature_internal).has_state() || !id(humidity_internal).has_state()) {
             return NAN;
           }
-          float tempValue = id(temperature).state;
-          float humidityValue = id(humidity).state;
+          float tempValue = id(temperature_internal).state;
+          float humidityValue = id(humidity_internal).state;
           // Calculate SVP
           float svp = 610.78 * exp(tempValue / (tempValue + 237.3) * 17.2694);
           // Convert SVP to kPa
@@ -161,12 +227,14 @@ sensor:
     unit_of_measurement: "kPa"
     accuracy_decimals: 2
     update_interval: 1s
+
+
 climate:
   - platform: thermostat
     id: template_climate
     internal: false
     name: "${friendly_name} Climate"
-    sensor: temperature
+    sensor: temperature_internal
     min_cooling_off_time: 300s
     min_cooling_run_time: 300s
     min_idle_time: 30s
@@ -219,7 +287,7 @@ climate:
     internal: false
     id: pid_climate_fan_cool_fan_dry
     name: "${friendly_name} Climate Humidity PID Controller"
-    sensor: humidity
+    sensor: humidity_internal
     default_target_temperature: 50
     cool_output: template_humidity_output
     visual:
@@ -233,7 +301,7 @@ climate:
     internal: false
     id: pid_climate_fan_cool
     name: "${friendly_name} Climate PID Controller"
-    sensor: temperature
+    sensor: temperature_internal
     default_target_temperature: 24.5°C
     cool_output: template_temperature_output
     visual:
@@ -245,7 +313,7 @@ climate:
       kd: 0.15000
   - platform: thermostat
     name: "${friendly_name} Climate Humidity Controller"
-    sensor: humidity
+    sensor: humidity_internal
     id: climate_humidity
     min_heating_off_time: 30s
     min_heating_run_time: 10s
@@ -258,10 +326,10 @@ climate:
     idle_action:
       - switch.turn_off: humiditySwitch
     default_preset: Home
-    heat_overrun: 5
-    cool_overrun: 5
-    cool_deadband: 5
-    heat_deadband: 5
+    heat_overrun: 2.5
+    cool_overrun: 2.5
+    cool_deadband: 2.5
+    heat_deadband: 2.5
     preset:
       - name: Home
         default_target_temperature_low: 40
@@ -284,6 +352,11 @@ switch:
     name: "${friendly_name} Switch USB Fan"
     output: fanUSBOutput
     id: fanUSBSwitch
+    restore_mode: ALWAYS_OFF
+  - platform: template
+    name: "${friendly_name} Display On"
+    id: displayOn
+    optimistic: True
     restore_mode: ALWAYS_OFF
 
 output:
@@ -330,6 +403,20 @@ fan:
     id: fanid
     internal: true
 
+binary_sensor:
+  - platform: gpio
+    internal: true
+    pin:
+      number: 16
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: sw1
+    on_press: 
+      then:
+        - script.execute: display_update_script
+
 light:
   - platform: binary
     name: "${friendly_name} Light Grow"
@@ -339,19 +426,19 @@ light:
 
 i2c:
   - id: i2cfast
-    sda: GPIO33
-    scl: GPIO25
-    frequency: 800khz
-    scan: False
-  - id: i2cslow
     sda: GPIO15
     scl: GPIO2
+    frequency: 400khz
+    scan: False
+  - id: i2cslow
+    sda: GPIO33
+    scl: GPIO25
     frequency: 50khz
     scan: False
 
 ads1115:
   - address: 0x48
-    i2c_id: i2cfast
+    i2c_id: i2cslow
     id: ads1115_hub
 
 font:
@@ -367,7 +454,7 @@ time:
         minutes: '*'
         then:
           lambda:
-            bool noTemp = !id(temperature).has_state() || !id(humidity).has_state();
+            bool noTemp = !id(temperature_internal).has_state() || !id(humidity_internal).has_state();
             bool noTime = !id(sntp_time).now().is_valid();
             if (noTemp || noTime) {
               id(growLight).turn_off().perform();
@@ -387,17 +474,21 @@ time:
 display:
   - platform: ssd1306_i2c
     i2c_id: i2cfast
+    id: my_display
     model: "SH1106_128x64"
     address: 0x3C
-    update_interval: 10s
+    update_interval: never
     lambda: |-
+      if (!id(displayOn).state) {
+        return;
+      }
       // Draw the graph at position [x=10,y=20]
-      int yPos = 0;
+      int yPos = id(rotary).state * -2;
       int fontSize = 12;
-      it.printf(2, yPos, id(roboto), "temp : %.1f°C", id(temperature).state);
+      it.printf(2, yPos, id(roboto), "temp : %.1f°C", id(temperature_internal).state);
 
       yPos = yPos + fontSize;
-      it.printf(2, yPos, id(roboto), "humidity : %.1f%%", id(humidity).state);
+      it.printf(2, yPos, id(roboto), "humidity : %.1f%%", id(humidity_internal).state);
 
       yPos = yPos + fontSize;
       if (!id(ads1115_hub).is_failed()) {

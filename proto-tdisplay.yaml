@@ -47,8 +47,8 @@ external_components:
     ]
     refresh: 0s
   - source: github://pr#5214 # used to load images on compile
-    components: [ image ]
-    refresh: 0s
+    # components: [ image ]
+    # refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font ]
     refresh: 0s
