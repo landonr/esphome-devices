@@ -23,11 +23,11 @@ wifi:
 
 external_components:
   - source:
-      # type: git
-      # url: https://github.com/landonr/homeThing
-      # ref: automations
-      type: local
-      path: ../homething/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+      # type: local
+      # path: ../homething/components
     components: [
       homeThing, 
       homeThingDisplayState, 
@@ -39,11 +39,11 @@ external_components:
     ]
     refresh: 0s
   - source:
-      # type: git
-      # url: https://github.com/landonr/esphome-components
-      # ref: automation
-      type: local
-      path: ../local_components/components
+      type: git
+      url: https://github.com/landonr/esphome-components
+      ref: main
+      # type: local
+      # path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -59,10 +59,10 @@ external_components:
   #     path: ../compile-online-image/esphome/components/
   #   components: [ image ]
   #   refresh: 0s
-  # - source: github://pr#5254
-  - source: # used to load fonts on compile
-      type: local
-      path: ../compile-online-image/esphome/components/
+  - source: github://pr#5254
+  # - source: # used to load fonts on compile
+      # type: local
+      # path: ../compile-online-image/esphome/components/
     components: [ font ]
     refresh: 0s
 
