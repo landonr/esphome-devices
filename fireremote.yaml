@@ -87,10 +87,10 @@ external_components:
   #   components: [ image ]
   #   refresh: 0s
 
-  # - source: github://pr#5254 # used to load fonts on compile
-  - source: # used to load fonts on compile
-      type: local
-      path: ../compile-online-image/esphome/components/
+  - source: github://pr#5254 # used to load fonts on compile
+  # - source: # used to load fonts on compile
+  #     type: local
+  #     path: ../compile-online-image/esphome/components/
     components: [ font ]
     refresh: 0s
 
