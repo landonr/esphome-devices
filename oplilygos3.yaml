@@ -1,5 +1,5 @@
 esphome:
-  name: "proto-s3"
+  name: "oplilygos3"
   platformio_options:
     board_build.f_flash: 80000000L
     board_build.partitions: default_16MB.csv
@@ -23,11 +23,53 @@ esp32:
 
 # Enable logging
 logger:
+  logs:
+    esp32.preferences: INFO
+    component: ERROR
+    sensor: INFO
+    switch: INFO
+    main: INFO
+    binary_sensor: WARN
+    text_sensor: WARN
+    homething.menu.display: WARN
+    homething.menu.base: INFO
+    homething.boot: INFO
+    homething.menu.control: INFO
+    homething.menu.screen: INFO
+    homething.animation: INFO
+    homething.menu.text_helpers: INFO
+    homething.nowplaying.control: WARN
+    homeassistant.media_player_group: WARN
+    homeassistant.component: WARN
+    homeassistant.light: WARN
+    homeassistant.switch: WARN
+    homeassistant.text_sensor: WARN
+    homeassistant.media_player_base: WARN
+    homeassistant.media_player_tv: WARN
+    cover: INFO
+    light: INFO
+    api: INFO
+    voice_assistant: INFO
+  level: DEBUG
+  # hardware_uart: USB_SERIAL_JTAG
+  # level: DEBUG
 
 # Enable Home Assistant API
 api:
 
 ota:
+
+substitutions:
+  friendly_name: "s3 proto"
+  rotary_pin_a: "10"
+  rotary_pin_b: "11"
+  medium_font_size: "17"
+  # sda_pin: "18"
+  # scl_pin: "17"
+  # screen_left_pin: "GPIO0"
+  # screen_right_pin: "GPIO14"
+  battery_pin: "4"
+  # log_level: "DEBUG"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -79,10 +121,10 @@ packages:
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
-  # fonts: !include ../homeThing/common/fonts.yaml
+  fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
-  # ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
+  ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
   # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
   # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
   # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
@@ -93,10 +135,10 @@ packages:
     ref: main
     files: [
       common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      common/fonts.yaml, # default font
+      # common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
-      common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml, # used for button controls
+      # common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml, # used for button controls
       common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
       common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
       common/tdisplay-s3/backlight.yaml, # backlight
@@ -105,35 +147,46 @@ packages:
     ]
     refresh: 0s
 
-substitutions:
-  friendly_name: "s3 proto"
-  # rotary_left_pin: "11"
-  # rotary_right_pin: "13"
-  # rotary_up_pin: "10"
-  # rotary_down_pin: "12"
-  # rotary_select_pin: "3"
-  rotary_pin_a: "2"
-  rotary_pin_b: "1"
-  screen_left_pin: "GPIO0"
-  screen_right_pin: "GPIO14"
-  battery_pin: "4"
-  # log_level: "DEBUG"
-
 i2s_audio:
-  i2s_lrclk_pin: GPIO3 # WS
-  i2s_bclk_pin: GPIO2 # SCK
+  i2s_lrclk_pin: 3 # WS
+  i2s_bclk_pin: 2 # SCK
   # i2s_mclk_pin: GPIO8 # MCLK
 
 microphone:
   - platform: i2s_audio
     id: external_mic
-    i2s_din_pin: GPIO1 # SD
+    i2s_din_pin: 1 # SD
     adc_type: external
     pdm: false
-    bits_per_sample: 32bit
+    # bits_per_sample: 32bit
+    channel: left
+
+voice_assistant:
+  microphone: external_mic
+  on_start:
+    then:
+      lambda: |-
+        id(homeThingMenu)->clearNotifications();
+        id(homeThingMenu)->addNotification("Voice Assistant", "Listening", "", true);
+        return;
+  on_error:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Error", message, false);
+        return;
+  on_stt_end:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Understood", x, false);
+        return;
+  on_tts_start:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Finished", x, true);
+        return;
 
 remote_transmitter:
-  pin: GPIO5
+  pin: GPIO12
   # Infrared remotes use a 50% carrier signal
   carrier_duty_percent: 50%
   id: infrared
@@ -151,6 +204,14 @@ light:
     id: light_rgb_lights
     entity_id: light.rgb_lights
     name: Color Lights 
+  - platform: homeassistant_component
+    id: light_track
+    entity_id: light.kitchen_track_lights
+    name: Track Lights
+  - platform: homeassistant_component
+    id: light_strip_light
+    entity_id: light.homethingm5stickplus_strip_light
+    name: Strip Light
 
 display:
   - platform: tdisplays3
@@ -183,6 +244,28 @@ switch:
     name: "Dark Mode"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+  - platform: output
+    name: "${friendly_name} Light"
+    id: lightSwitch
+    output: lightOutput
+    restore_mode: ALWAYS_ON
+  - platform: template
+    id: voice_assistant_switch
+    name: ${friendly_name} Voice Assistant
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    turn_on_action: 
+      then:
+        - voice_assistant.start:
+    turn_off_action: 
+      then:
+        voice_assistant.stop:
+
+output:
+  - platform: gpio
+    pin: 13
+    id: lightOutput
+    # inverted: True
 
 homeThingDisplayState:
   id: display_state_id
@@ -196,6 +279,8 @@ homeThingDisplayState:
   launch_image: launch_image
   now_playing_max_lines: 10
   dark_mode: dark_mode
+  colors:
+    accent_primary: my_primary_accent
 
 homeThingAppNowPlaying:
   id: now_playing
@@ -221,10 +306,17 @@ homeThingAppBreakout:
 
 image:
   id: launch_image
-  file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
-  # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=f6a40dc8c712ca8c1f3a599ee15286283f197bd696f5f59b0d3481185fe14c4e&cache=b311e6b1cf141036"
-  resize: 48x48
-  type: RGB24
+  file: "s3.png"
+  # file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
+  # file: "https://private-user-images.githubusercontent.com/2607659/283618049-b19a5b39-b0dd-4bac-9803-df9a452ab56b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTEiLCJleHAiOjE3MDE5MjUxNzQsIm5iZiI6MTcwMTkyNDg3NCwicGF0aCI6Ii8yNjA3NjU5LzI4MzYxODA0OS1iMTlhNWIzOS1iMGRkLTRiYWMtOTgwMy1kZjlhNDUyYWI1NmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQUlXTkpZQVg0Q1NWRUg1M0ElMkYyMDIzMTIwNyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyMzEyMDdUMDQ1NDM0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDQ1ZTk3MDRiZTc4NjBjZWNhMGU2MjI2YWY2NTdkNTFiNDM2NDhmNzAyYWQyODhiOThkNDU2NWM3NDA4NzRjMyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.lBQJ6haJTqdRbtPkXPy2xLYgQaqTkhAUHSrjOJkdaUk"
+  resize: 100x100
+  type: RGBA
+
+color:
+  - id: my_primary_accent
+    red_int: 106
+    green_int: 43
+    blue_int: 138
 
 homeThing:
   id: homeThingMenu
@@ -253,6 +345,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+      # - id: lightSwitch
+      #   type: switch
       - id: dark_mode
         type: switch
       - id: light_rgb_lights
@@ -279,14 +373,14 @@ homeThing:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.desk_position_nudge_down"
+                  entity_id: "button.mega_homething_desk_position_nudge_up"
         - type: command
           name: "desk nudge down"
           command:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.desk_position_nudge_down"
+                  entity_id: "button.mega_homething_desk_position_nudge_down"
         - id: light_desk_lamp
           type: light
     - name: Lights Screen
@@ -294,6 +388,10 @@ homeThing:
         - id: light_all_lights
           type: light
         - id: light_rgb_lights
+          type: light
+        - id: light_track
+          type: light
+        - id: light_strip_light
           type: light
         - type: command
           name: "color scene"

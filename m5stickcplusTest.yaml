@@ -101,6 +101,9 @@ binary_sensor:
       number: GPIO37
       inverted: true
     name: Button A
+    on_press:
+      then:
+        switch.toggle: restart_switch
 
 spi:
   clk_pin: GPIO13
@@ -124,6 +127,12 @@ display:
         it.printf(60, 25, id(small_font), "Not Charging");
       }
       it.printf(20, 50, id(small_font), "Battery: %f", id(batteryPercent).state);
+
+      if (!id(ads1115_hub).is_failed()) {
+        it.printf(20, 70, id(small_font), "Voltage!!! %f", id(ads1115_a0_gnd).state);
+      } else {
+        it.printf(20, 70, id(small_font), "Voltage: N/A");
+      }
       return;
 
 # Individual outputs
@@ -140,3 +149,27 @@ switch:
   - platform: restart
     id: restart_switch
     name: "${friendly_name} Restart"
+
+i2c:
+  - id: bus_c
+    sda: GPIO32
+    scl: GPIO33
+    scan: true
+
+ads1115:
+  - address: 0x48
+    i2c_id: bus_c
+    id: ads1115_hub
+
+sensor:
+  - platform: ads1115
+    multiplexer: 'A0_GND'
+    gain: 6.144
+    id: ads1115_a0_gnd
+    update_interval: 0.5s
+    unit_of_measurement: "%"
+    name: "ADS1115 Channel A0-GND"
+    filters:
+      calibrate_linear:
+          - 0.0 -> 0.0
+          - 5.0 -> 100.0

@@ -67,6 +67,7 @@ external_components:
   #   components: [ image ]
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font ]
+    refresh: 0s
 
 
 packages:
@@ -96,6 +97,7 @@ packages:
   # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
   # binary_sensor_voice: !include ../homeThing/common/m5stack-stickc/binary_sensor_voice.yaml # buttons
   # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderCVoice.yaml # rotary encoder and built in led
+  # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
@@ -117,6 +119,34 @@ light:
     id: light_rgb_lights
     entity_id: light.rgb_lights
     name: Color Lights 
+  - platform: esp32_rmt_led_strip
+    chipset: WS2812
+    rgb_order: GRB
+    pin: GPIO32
+    num_leds: 42
+    rmt_channel: 2
+    name: "${friendly_name} Strip Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+    id: strip_light
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+          name: Rainbow Effect
+          speed: 10
+          width: 50
+      - addressable_color_wipe:
+          name: Snow
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: true
 
 color:
   - id: my_primary_accent
