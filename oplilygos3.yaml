@@ -70,6 +70,9 @@ substitutions:
   # screen_right_pin: "GPIO14"
   battery_pin: "4"
   # log_level: "DEBUG"
+  launch_image_size: 100x100
+  launch_image_file: "s3.png"
+  launch_image_type: "RGBA"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -82,19 +85,19 @@ wifi:
 
 external_components:
   - source:
-      type: git
-      url: https://github.com/landonr/homeThing
-      ref: main
-      # type: local
-      # path: ../homething/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout ]
+      # type: git
+      # url: https://github.com/landonr/homeThing
+      # ref: main
+      type: local
+      path: ../homething/components
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout, homeThingAppWeather]
     refresh: 0s
   - source:
-      type: git
-      url: https://github.com/landonr/esphome-components
-      ref: main
-      # type: local
-      # path: ../local_components/components
+      # type: git
+      # url: https://github.com/landonr/esphome-components
+      # ref: main
+      type: local
+      path: ../local_components/components
     components: [
       homeassistant_component,
       homeassistant_media_player,
@@ -107,12 +110,9 @@ external_components:
   - source: 
       type: git
       url: https://github.com/landonr/lilygo-tdisplays3-esphome/
-      # ref: sept2023
-    refresh: 1d
+      ref: main
+    refresh: 0s
     components: [tdisplays3]
-  # - source: github://pr#5214 # used to load images on compile
-  #   components: [ image ]
-  #   refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font ]
     refresh: 0s
@@ -120,6 +120,8 @@ external_components:
 packages:
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
+  plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
+  weather: !include homeConfig/weather.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -228,12 +230,6 @@ cover:
     name: "Megadesk"
     id: cover_megadesk
 
-text_sensor:
-  - platform: homeassistant
-    entity_id: "sensor.particulate_matter_2_5um_concentration"
-    name: "Air Quality"
-    id: air_quality
-
 switch:
   - platform: homeassistant_component
     entity_id: "switch.oven_fan"
@@ -304,19 +300,26 @@ homeThingAppBreakout:
   display: my_display
   display_state: display_state_id
 
-image:
-  id: launch_image
-  file: "s3.png"
-  # file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
-  # file: "https://private-user-images.githubusercontent.com/2607659/283618049-b19a5b39-b0dd-4bac-9803-df9a452ab56b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTEiLCJleHAiOjE3MDE5MjUxNzQsIm5iZiI6MTcwMTkyNDg3NCwicGF0aCI6Ii8yNjA3NjU5LzI4MzYxODA0OS1iMTlhNWIzOS1iMGRkLTRiYWMtOTgwMy1kZjlhNDUyYWI1NmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQUlXTkpZQVg0Q1NWRUg1M0ElMkYyMDIzMTIwNyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyMzEyMDdUMDQ1NDM0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDQ1ZTk3MDRiZTc4NjBjZWNhMGU2MjI2YWY2NTdkNTFiNDM2NDhmNzAyYWQyODhiOThkNDU2NWM3NDA4NzRjMyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.lBQJ6haJTqdRbtPkXPy2xLYgQaqTkhAUHSrjOJkdaUk"
-  resize: 100x100
-  type: RGBA
-
 color:
   - id: my_primary_accent
     red_int: 106
     green_int: 43
     blue_int: 138
+
+homeThingAppWeather:
+  id: weather
+  display: my_display
+  display_state: display_state_id
+  temperature_sensor: weather_temperature
+  humidity_sensor: weather_humidity
+  condition_sensor: weather_state
+  images:
+    cloudy: weather_cloudy
+    fog: weather_fog
+    snow: weather_snow
+    sunny: weather_sunny
+    rainy: weather_rainy
+    night: weather_night
 
 homeThing:
   id: homeThingMenu
@@ -325,8 +328,11 @@ homeThing:
     - breakout
     - snake
     - cat_toy
+    - weather
   settings:
     sleep_after: 14400
+    display_timeout_while_charging: 30
+    idle_app: now_playing
   backlight: backlight
   header:
     time_id: esptime
@@ -347,8 +353,6 @@ homeThing:
     entities:
       # - id: lightSwitch
       #   type: switch
-      - id: dark_mode
-        type: switch
       - id: light_rgb_lights
         type: light
       - type: command
@@ -383,6 +387,14 @@ homeThing:
                   entity_id: "button.mega_homething_desk_position_nudge_down"
         - id: light_desk_lamp
           type: light
+    - name: Plants
+      entities:
+        - type: text_sensor
+          id: sensor_plant_temp
+        - type: text_sensor
+          id: sensor_plant_humidity
+        - type: text_sensor
+          id: sensor_plant_fan
     - name: Lights Screen
       entities:
         - id: light_all_lights
@@ -418,6 +430,8 @@ homeThing:
     - name: Settings Screen
       show_version: True
       entities:
+        - id: dark_mode
+          type: switch
         - id: backlight
           type: light
         - id: restart_switch

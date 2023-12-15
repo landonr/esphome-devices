@@ -1,0 +1,44 @@
+substitutions:
+  launch_image_file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/homeThingLogo.svg"
+  launch_image_size: "48x48"
+  launch_image_type: "TRANSPARENT_BINARY"
+
+sensor:
+  - platform: homeassistant
+    id: weather_temperature
+    entity_id: weather.accuweather
+    attribute: temperature
+  - platform: homeassistant
+    id: weather_humidity
+    entity_id: weather.accuweather
+    attribute: humidity
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.weather_condition"
+    name: "Weather state"
+    id: weather_state
+
+image:
+  - file: mdi:weather-cloudy
+    id: weather_cloudy
+    resize: 50x50
+  - file: mdi:weather-fog
+    id: weather_fog
+    resize: 50x50
+  - file: mdi:weather-snowy
+    id: weather_snow
+    resize: 50x50
+  - file: mdi:weather-sunny
+    id: weather_sunny
+    resize: 50x50
+  - file: mdi:weather-rainy
+    id: weather_rainy
+    resize: 50x50
+  - file: mdi:weather-night
+    id: weather_night
+    resize: 50x50
+  - id: launch_image
+    file: $launch_image_file
+    resize: $launch_image_size
+    type: $launch_image_type

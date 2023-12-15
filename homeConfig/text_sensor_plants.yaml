@@ -1,0 +1,13 @@
+text_sensor:
+  - platform: homeassistant
+    entity_id: "sensor.growbox_dht20_temperature"
+    name: "Temperature"
+    id: sensor_plant_temp
+  - platform: homeassistant
+    entity_id: "sensor.growbox_dht20_humidity"
+    name: "Humidity"
+    id: sensor_plant_humidity
+  - platform: homeassistant
+    entity_id: "sensor.growbox_fan_speed_template"
+    name: "Fan Speed"
+    id: sensor_plant_fan
