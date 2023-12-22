@@ -85,11 +85,11 @@ wifi:
 
 external_components:
   - source:
-      # type: git
-      # url: https://github.com/landonr/homeThing
-      # ref: main
-      type: local
-      path: ../homething/components
+      type: git
+      url: https://github.com/landonr/homeThing
+      ref: main
+      # type: local
+      # path: ../homething/components
     components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout, homeThingAppWeather]
     refresh: 0s
   - source:
@@ -114,6 +114,9 @@ external_components:
     refresh: 0s
     components: [tdisplays3]
   - source: github://pr#5254 # used to load fonts on compile
+  # - source:
+  #     type: local
+  #     path: ../compile-online-image/esphome/components/
     components: [ font ]
     refresh: 0s
 

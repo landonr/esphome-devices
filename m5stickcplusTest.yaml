@@ -116,6 +116,7 @@ display:
     cs_pin: GPIO5
     dc_pin: GPIO23
     reset_pin: GPIO18
+    backlight_pin: no
     rotation: 270
     update_interval: 1s
     lambda: |-

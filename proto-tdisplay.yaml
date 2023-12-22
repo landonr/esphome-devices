@@ -147,8 +147,6 @@ homeThing:
     entities:
       - id: dark_mode
         type: switch
-      - id: light_rgb_lights
-        type: light
 
 display:
   - platform: st7789v
