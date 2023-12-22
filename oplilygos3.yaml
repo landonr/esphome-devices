@@ -362,8 +362,6 @@ homeThing:
               service: button.press
               data:
                 entity_id: "button.catfeeder_node_feed_single"
-      - type: text_sensor
-        id: air_quality
       - type: switch
         id: oven_fan
   screens:
