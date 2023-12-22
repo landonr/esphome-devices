@@ -96,7 +96,6 @@ packages:
   home_media_player: !include homeConfig/media_player_light.yaml
   # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
   # unit_encoder: !include ../homeThing/common/UnitEncoderC.yaml
-  # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
@@ -114,7 +113,6 @@ packages:
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
-      common/m5stack-fire/sleep.yaml, # deep sleep
       # common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
@@ -213,12 +211,35 @@ light:
           name: Rainbow Effect
           speed: 20
           width: 15
+      - addressable_color_wipe:
+          name: Snow
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: true
+      - addressable_fireworks:
+          name: Fireworks Effect
+          update_interval: 32ms
+          spark_probability: 10%
+          use_random_color: True
+          fade_out_rate: 120
+      - addressable_scan:
+          name: Scan Effect
+          move_interval: 100ms
+          scan_width: 1
   - platform: esp32_rmt_led_strip
+    chipset: WS2812
     rgb_order: RGB
     pin: GPIO26
     num_leds: 33
     rmt_channel: 2
-    chipset: WS2812
     name: "${friendly_name} Strip Light"
     restore_mode: ALWAYS_OFF
     id: strip_light
@@ -252,7 +273,6 @@ homeThing:
   settings:
     mode: rotary
     display_timeout_while_charging: 30
-  sleep_switch: sleep_toggle
   backlight: backlight
   battery:
     battery_percent: battery_percent
@@ -268,6 +288,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+        - id: strip_light
+          type: light
         - type: command
           name: "feed lil freak"
           command:
@@ -308,6 +330,8 @@ homeThing:
         - id: light_rgb_lights
           type: light
         - id: strip_light
+          type: light
+        - id: side_light
           type: light
         - type: command
           name: "color lights"

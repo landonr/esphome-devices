@@ -98,8 +98,8 @@ number:
     name: "Grams per day"
     id: grams_per_day
     optimistic: true
-    min_value: 100
-    max_value: 150
+    min_value: 60
+    max_value: 130
     restore_value: True
     initial_value: 115
     step: 5
@@ -347,29 +347,9 @@ time:
           - number.to_min: bonus_treats_internal
   - platform: sntp
     on_time:
-      - seconds: 0
+      - hours: 4,8,17
+        seconds: 0
         minutes: 0
-        hours: 4
-        then:
-          - script.execute:
-              id: feed_script
-              force: false
-              servings_current: !lambda 'return id(servings).state;'
-  - platform: sntp
-    on_time:
-      - seconds: 0
-        minutes: 45
-        hours: 8
-        then:
-          - script.execute:
-              id: feed_script
-              force: false
-              servings_current: !lambda 'return id(servings).state;'
-  - platform: sntp
-    on_time:
-      - seconds: 0
-        minutes: 30
-        hours: 19
         then:
           - script.execute:
               id: feed_script
@@ -383,35 +363,40 @@ text_sensor:
   - platform: template
     name: "Feed schedule"
     lambda: !lambda |-
-      return {"04:00, 09:00, 19:00"};
+      return {"04:00, 08:00, 17:00"};
   - platform: template
     name: "Next feed"
+    update_interval: 1s
     lambda: !lambda |-
-      int number = id(sntp_time).now().hour;
-      std::vector<int> ordered_list = {4, 9, 19};
+      int current_hour = id(sntp_time).now().hour;
+      std::vector<int> ordered_list = {4, 8, 19};
       bool skip_next_higher = id(skip_next_meal).state;
 
-      int next_highest = -1;
-      int next_next_highest = -1;
+      int next_hour = 0;
+      bool found = false;
 
-      for (int value : ordered_list) {
-          if (value > number) {
+      for (size_t i = 0; i < ordered_list.size(); i++) {
+          if (ordered_list[i] > current_hour) {
               if (skip_next_higher) {
-                  if (next_highest == -1) {
-                      next_highest = value;
+                  if (i + 1 < ordered_list.size()) {
+                      next_hour = ordered_list[i + 1];
                   } else {
-                      next_next_highest = value;
-                      break;
+                      next_hour = ordered_list[0]; // Wrap around to 0
                   }
               } else {
-                  next_highest = value;
-                  break;
+                  next_hour = ordered_list[i];
               }
+              found = true;
+              break;
           }
       }
-      int hour = skip_next_higher ? next_next_highest : next_highest;
-      std::string period = (hour >= 12) ? "PM" : "AM";
-      int hour12 = (hour > 12) ? hour - 12 : hour;
+      if (!found) {
+        // Set next_hour based on some default logic since no higher hour was found
+        // For example, setting it to the first hour in the ordered_list
+        next_hour = ordered_list[0];
+      }
+      std::string period = (next_hour >= 12) ? "PM" : "AM";
+      int hour12 = (next_hour > 12) ? next_hour - 12 : next_hour;
       if (hour12 == 0) {
           hour12 = 12;
       }

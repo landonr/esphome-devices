@@ -34,7 +34,6 @@ external_components:
 
 packages:
   # home_media_player: !include homeConfig/media_player_light.yaml
-  # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
@@ -85,8 +84,8 @@ spi:
 
 i2s_audio:
   i2s_lrclk_pin: GPIO13
-  i2s_bclk_pin: GPIO32
-  i2s_mclk_pin: GPIO0
+  # i2s_bclk_pin: GPIO32
+  # i2s_mclk_pin: GPIO0
 
 microphone:
   - platform: i2s_audio
