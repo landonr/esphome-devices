@@ -98,8 +98,8 @@ number:
     name: "Grams per day"
     id: grams_per_day
     optimistic: true
-    min_value: 100
-    max_value: 150
+    min_value: 60
+    max_value: 130
     restore_value: True
     initial_value: 115
     step: 5
@@ -347,7 +347,7 @@ time:
           - number.to_min: bonus_treats_internal
   - platform: sntp
     on_time:
-      - hours: 4,8,19
+      - hours: 4,8,17
         seconds: 0
         minutes: 0
         then:
@@ -363,7 +363,7 @@ text_sensor:
   - platform: template
     name: "Feed schedule"
     lambda: !lambda |-
-      return {"04:00, 08:00, 19:00"};
+      return {"04:00, 08:00, 17:00"};
   - platform: template
     name: "Next feed"
     update_interval: 1s
