@@ -71,7 +71,7 @@ substitutions:
   battery_pin: "4"
   # log_level: "DEBUG"
   launch_image_size: 100x100
-  launch_image_file: "s3.png"
+  # launch_image_file: "s3.png"
   launch_image_type: "RGBA"
 
 wifi:

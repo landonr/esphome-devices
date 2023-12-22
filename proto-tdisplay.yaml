@@ -142,11 +142,6 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
-  home_screen:
-    name: root
-    entities:
-      - id: dark_mode
-        type: switch
 
 display:
   - platform: st7789v
