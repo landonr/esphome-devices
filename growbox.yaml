@@ -64,6 +64,19 @@ script:
     mode: single
     then:
       lambda: |-
+        if (id(select_mode).active_index() == 1) {
+          id(growLight).turn_off().perform();
+          id(climate_temperature).make_call().set_mode("OFF").perform();
+          id(climate_humidity).make_call().set_mode("OFF").perform();
+          ESP_LOGD("main", "disabled");
+          return;
+        } else if (id(select_mode).active_index() == 2) {
+          id(growLight).turn_off().perform();
+          id(climate_temperature).make_call().set_mode("COOL").perform();
+          id(climate_humidity).make_call().set_mode("OFF").perform();
+          ESP_LOGD("main", "maintenance");
+          return;
+        } 
         bool noTemp = !id(temperature_internal).has_state() || !id(humidity_internal).has_state();
         bool noTime = !id(sntp_time).now().is_valid();
         if (noTemp || noTime) {
@@ -73,7 +86,7 @@ script:
           ESP_LOGD("main", "off Time noTemp %d noTime %d", noTemp, noTime);
           return;
         }
-        if (id(sntp_time).now().hour >= 5 && id(sntp_time).now().hour < 21) {
+        if (id(sntp_time).now().hour >= 5 && id(sntp_time).now().hour < 17) {
           ESP_LOGD("main", "on Time %02d:%02d:%02d", id(sntp_time).now().hour, id(sntp_time).now().minute, id(sntp_time).now().second);
           id(growLight).turn_on().perform();
           id(climate_temperature).make_call().set_mode("COOL").perform();
@@ -85,6 +98,21 @@ script:
           id(climate_humidity).make_call().set_mode("COOL").perform();
           id(fanid).turn_on().set_speed(id(idle_fan_speed).state).perform();
         }
+
+select:
+  - platform: template
+    name: "${friendly_name} Mode"
+    id: select_mode
+    optimistic: true
+    options:
+      - auto
+      - disabled
+      - maintenance
+    initial_option: auto
+    restore_value: true
+    on_value:
+      - script.execute: thermostat_update
+
 
 sensor:
   - platform: rotary_encoder
@@ -136,19 +164,13 @@ sensor:
     - calibrate_linear:
         method: least_squares
         datapoints:
-        - 2.5 -> 100
-        - 3.15 -> 60
-        - 3.3 -> 0
+        - 2.7 -> 100
+        - 3.05 -> 50
+        - 3.2 -> 25
+        - 3.31 -> 0
     - sliding_window_moving_average:
         window_size: 5
         send_every: 5
-  # - platform: ads1115
-  #   multiplexer: 'A0_GND'
-  #   gain: 6.144
-  #   name: "${friendly_name} Soil Moisture Raw"
-  #   update_interval: 60s
-  #   id: soil_moisture_raw
-  #   unit_of_measurement: "v"
 
 # DHT20 External Sensor
   - platform: template
