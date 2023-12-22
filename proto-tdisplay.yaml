@@ -63,7 +63,6 @@ packages:
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   home_media_player: !include homeConfig/media_player_light.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
   remote_package:

@@ -96,7 +96,6 @@ packages:
   home_media_player: !include homeConfig/media_player_light.yaml
   # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
   # unit_encoder: !include ../homeThing/common/UnitEncoderC.yaml
-  # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml

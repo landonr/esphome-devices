@@ -86,7 +86,6 @@ packages:
     ]
     refresh: 0s
   # home_media_player: !include homeConfig/media_player_light.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
