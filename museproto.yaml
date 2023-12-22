@@ -59,6 +59,7 @@ media_player:
 
 voice_assistant:
   microphone: board_microphone
+  media_player: media_out
   on_start:
     - light.turn_on:
         id: board_led
@@ -81,10 +82,6 @@ voice_assistant:
         green: 20%
         effect: pulse
   on_end:
-    - delay: 1s
-    - wait_until:
-        not:
-          speaker.is_playing:
     - light.turn_off: board_led
   on_error:
     - light.turn_on:
