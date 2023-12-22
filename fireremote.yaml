@@ -113,7 +113,6 @@ packages:
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
-      common/m5stack-fire/sleep.yaml, # deep sleep
       # common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
@@ -274,7 +273,6 @@ homeThing:
   settings:
     mode: rotary
     display_timeout_while_charging: 30
-  sleep_switch: sleep_toggle
   backlight: backlight
   battery:
     battery_percent: battery_percent

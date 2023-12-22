@@ -46,13 +46,6 @@ microphone:
     adc_type: external
     pdm: false
 
-speaker:
-  - platform: i2s_audio
-    id: board_external_speakers
-    dac_type: external
-    i2s_dout_pin: GPIO26
-    mode: mono
-
 media_player:
   - platform: i2s_audio
     id: media_out
@@ -66,7 +59,6 @@ media_player:
 
 voice_assistant:
   microphone: board_microphone
-  speaker: board_external_speakers
   on_start:
     - light.turn_on:
         id: board_led
