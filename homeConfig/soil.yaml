@@ -1,0 +1,74 @@
+substitutions:
+  ads1115_id: ads1115_hub
+  ads1115_i2c_bus: bus_a
+  ads1115_gain: "4.096"
+  ads1115_multiplexer: "A0_GND"
+  soil_moisture_id: soil_moisture
+  soil_moisture_raw_id: soil_moisture_raw
+  soil_moisture_default_dry: "1.8"
+  soil_moisture_default_wet: "1.8"
+
+ads1115:
+  - address: 0x48
+    i2c_id: $ads1115_i2c_bus
+    id: $ads1115_id
+
+globals:
+  # Value to consider completely dry. Auto-calibrated.
+  - id: dryValue
+    type: double
+    restore_value: yes
+    initial_value: $soil_moisture_default_dry
+  # Value to consider completely wet. Auto-calibrated.
+  - id: wetValue
+    type: double
+    restore_value: yes
+    initial_value: $soil_moisture_default_wet
+
+sensor:
+  - platform: ads1115 # Soil Moisture Sensor Raw
+    name: "${friendly_name} Soil Moisture Raw"
+    id: $soil_moisture_raw_id
+    multiplexer: 'A0_GND'
+    gain: $ads1115_gain
+    update_interval: 6s
+    filters:
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 5
+  - platform: ads1115
+    name: "${friendly_name} Soil Moisture"
+    id: $soil_moisture_id
+    multiplexer: 'A0_GND'
+    gain: $ads1115_gain
+    update_interval: 6s
+    unit_of_measurement: "%"
+    filters:
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 5
+      - lambda: !lambda |-
+          if (id(dryValue) < x) {
+            // Auto-calibrate dryValue
+            id(dryValue) = x;
+          }
+          if (id(wetValue) > x) {
+          // Auto-calibrate wetValue
+            id(wetValue) = x;
+          }
+          // Scale x: dryValue->wetValue, 0->100
+          return (x - id(dryValue)) * (100 - 0) / (id(wetValue) - id(dryValue)) + 0;
+  - platform: template
+    id: soil_dry_template
+    name: "${friendly_name} Soil Dry Template"
+    accuracy_decimals: 2
+    update_interval: 6s
+    lambda: |-
+      return id(dryValue);
+  - platform: template
+    id: soil_wet_template
+    name: "${friendly_name} Soil Wet Template"
+    accuracy_decimals: 2
+    update_interval: 6s
+    lambda: |-
+      return id(wetValue);
