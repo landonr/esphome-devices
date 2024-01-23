@@ -78,6 +78,8 @@ external_components:
   #     path: ../compile-online-image/esphome/components/
     components: [ font ]
     refresh: 0s
+  - source: github://pr#4710
+    components: [ online_image ]
 
 packages:
   home_media_player: !include homeConfig/media_player.yaml

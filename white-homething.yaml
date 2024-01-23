@@ -197,7 +197,8 @@ image:
     # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=a955fc758234e7ac5d9e484b5dc401970113a347dc2de2c5f4f1a70ab4fde614&cache=45ec98127e9e4fe0"
     # file: https://upload.wikimedia.org/wikipedia/commons/b/b6/SIPI_Jelly_Beans_4.1.07.tiff
     resize: 64x64
-    type: RGB24
+    # type: RGB24
+    type: TRANSPARENT_BINARY
     
 
 sensor:

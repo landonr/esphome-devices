@@ -166,6 +166,8 @@ homeThing:
   id: homeThingMenu
   apps: 
     - now_playing
+  boot:
+    launch_image: launch_image
   settings:
     sleep_after: 14400
     display_timeout_while_charging: 30
