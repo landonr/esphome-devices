@@ -1,15 +1,20 @@
 esphome:
-  name: "proto-s3"
+  name: "oplilygos3"
   platformio_options:
     board_build.f_flash: 80000000L
     board_build.partitions: default_16MB.csv
     board_build.arduino.memory_type: qio_opi
   on_boot: 
     then:
-    - delay: 5s
+    - light.turn_on:
+        id: backlight
+        brightness: 10%
+    - delay: 0.5s
     - light.turn_on:
         id: backlight
         brightness: 100%
+        transition_length: 0.5s
+
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -21,13 +26,12 @@ esp32:
   #   type: esp-idf
   #   version: recommended
 
-# Enable logging
-logger:
-
 # Enable Home Assistant API
 api:
 
 ota:
+
+web_server:
 
 wifi:
   ssid: !secret wifi_ssid
@@ -45,7 +49,7 @@ external_components:
       ref: main
       # type: local
       # path: ../homething/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppCatToy, homeThingAppBreakout, homeThingAppWeather]
     refresh: 0s
   - source:
       type: git
@@ -65,19 +69,24 @@ external_components:
   - source: 
       type: git
       url: https://github.com/landonr/lilygo-tdisplays3-esphome/
-      # ref: sept2023
-    refresh: 1d
+      ref: v0.1
+    refresh: 0s
     components: [tdisplays3]
-  # - source: github://pr#5214 # used to load images on compile
-  #   components: [ image ]
-  #   refresh: 0s
   - source: github://pr#5254 # used to load fonts on compile
+  # - source:
+  #     type: local
+  #     path: ../compile-online-image/esphome/components/
     components: [ font ]
     refresh: 0s
+  - source: github://pr#4710
+    components: [ online_image ]
 
 packages:
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
+  plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
+  weather: !include homeConfig/weather.yaml
+  # logger: !include ../homeThing/common/logger.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -101,39 +110,66 @@ packages:
       common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
       common/tdisplay-s3/backlight.yaml, # backlight
       common/settings.yaml, # settings screen
+      common/nowPlayingImage.yaml, # settings screen
+      common/logger.yaml, # logger
       # common/images.yaml # boot screen image
     ]
     refresh: 0s
 
 substitutions:
   friendly_name: "s3 proto"
-  # rotary_left_pin: "11"
-  # rotary_right_pin: "13"
-  # rotary_up_pin: "10"
-  # rotary_down_pin: "12"
-  # rotary_select_pin: "3"
-  rotary_pin_a: "2"
-  rotary_pin_b: "1"
-  screen_left_pin: "GPIO0"
-  screen_right_pin: "GPIO14"
+  rotary_pin_a: "10"
+  rotary_pin_b: "11"
+  medium_font_size: "16"
+  # sda_pin: "18"
+  # scl_pin: "17"
+  # screen_left_pin: "GPIO0"
+  # screen_right_pin: "GPIO14"
   battery_pin: "4"
   # log_level: "DEBUG"
+  launch_image_size: 100x100
+  launch_image_file: "http://www.katkam.ca/api/pic"
+  launch_image_type: "RGBA"
 
 i2s_audio:
-  i2s_lrclk_pin: GPIO3 # WS
-  i2s_bclk_pin: GPIO2 # SCK
-  # i2s_mclk_pin: GPIO8 # MCLK
+  i2s_lrclk_pin: 3 # WS
+  i2s_bclk_pin: 2 # SCK
 
 microphone:
   - platform: i2s_audio
     id: external_mic
-    i2s_din_pin: GPIO1 # SD
+    i2s_din_pin: 1 # SD
     adc_type: external
     pdm: false
-    bits_per_sample: 32bit
+    # bits_per_sample: 32bit
+    channel: left
+
+voice_assistant:
+  microphone: external_mic
+  on_start:
+    then:
+      lambda: |-
+        id(homeThingMenu)->clearNotifications();
+        id(homeThingMenu)->addNotification("Voice Assistant", "Listening", "", true);
+        return;
+  on_error:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Error", message, false);
+        return;
+  on_stt_end:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Understood", x, false);
+        return;
+  on_tts_start:
+    then:
+      lambda: |-
+        id(homeThingMenu)->addNotification("Voice Assistant", "Finished", x, true);
+        return;
 
 remote_transmitter:
-  pin: GPIO5
+  pin: GPIO13
   # Infrared remotes use a 50% carrier signal
   carrier_duty_percent: 50%
   id: infrared
@@ -151,6 +187,14 @@ light:
     id: light_rgb_lights
     entity_id: light.rgb_lights
     name: Color Lights 
+  - platform: homeassistant_component
+    id: light_track
+    entity_id: light.kitchen_track_lights
+    name: Track Lights
+  - platform: homeassistant_component
+    id: light_strip_light
+    entity_id: light.homethingm5stickplus_strip_light
+    name: Strip Light
 
 display:
   - platform: tdisplays3
@@ -167,12 +211,6 @@ cover:
     name: "Megadesk"
     id: cover_megadesk
 
-text_sensor:
-  - platform: homeassistant
-    entity_id: "sensor.particulate_matter_2_5um_concentration"
-    name: "Air Quality"
-    id: air_quality
-
 switch:
   - platform: homeassistant_component
     entity_id: "switch.oven_fan"
@@ -183,6 +221,17 @@ switch:
     name: "Dark Mode"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+  - platform: template
+    id: voice_assistant_switch
+    name: ${friendly_name} Voice Assistant
+    restore_mode: ALWAYS_OFF
+    optimistic: true
+    turn_on_action: 
+      then:
+        - voice_assistant.start:
+    turn_off_action: 
+      then:
+        voice_assistant.stop:
 
 homeThingDisplayState:
   id: display_state_id
@@ -193,15 +242,16 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
-  now_playing_max_lines: 10
   dark_mode: dark_mode
+  colors:
+    accent_primary: my_primary_accent
 
 homeThingAppNowPlaying:
   id: now_playing
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  now_playing_image: media_player_image
 
 homeThingAppSnake:
   id: snake
@@ -219,12 +269,26 @@ homeThingAppBreakout:
   display: my_display
   display_state: display_state_id
 
-image:
-  id: launch_image
-  file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
-  # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=f6a40dc8c712ca8c1f3a599ee15286283f197bd696f5f59b0d3481185fe14c4e&cache=b311e6b1cf141036"
-  resize: 48x48
-  type: RGB24
+color:
+  - id: my_primary_accent
+    red_int: 106
+    green_int: 43
+    blue_int: 138
+
+homeThingAppWeather:
+  id: weather
+  display: my_display
+  display_state: display_state_id
+  temperature_sensor: weather_temperature
+  humidity_sensor: weather_humidity
+  condition_sensor: weather_state
+  images:
+    cloudy: weather_cloudy
+    fog: weather_fog
+    snow: weather_snow
+    sunny: weather_sunny
+    rainy: weather_rainy
+    night: weather_night
 
 homeThing:
   id: homeThingMenu
@@ -233,8 +297,11 @@ homeThing:
     - breakout
     - snake
     - cat_toy
+    - weather
   settings:
-    sleep_after: 14400
+    sleep_after: 3600
+    display_timeout_while_charging: 30
+    idle_app: now_playing
   backlight: backlight
   header:
     time_id: esptime
@@ -250,11 +317,10 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   home_screen:
     name: root
     entities:
-      - id: dark_mode
-        type: switch
       - id: light_rgb_lights
         type: light
       - type: command
@@ -264,8 +330,6 @@ homeThing:
               service: button.press
               data:
                 entity_id: "button.catfeeder_node_feed_single"
-      - type: text_sensor
-        id: air_quality
       - type: switch
         id: oven_fan
   screens:
@@ -279,21 +343,33 @@ homeThing:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.desk_position_nudge_down"
+                  entity_id: "button.mega_homething_desk_position_nudge_up"
         - type: command
           name: "desk nudge down"
           command:
             - homeassistant.service:
                 service: button.press
                 data:
-                  entity_id: "button.desk_position_nudge_down"
+                  entity_id: "button.mega_homething_desk_position_nudge_down"
         - id: light_desk_lamp
           type: light
+    - name: Plants
+      entities:
+        - type: text_sensor
+          id: sensor_plant_temp
+        - type: text_sensor
+          id: sensor_plant_humidity
+        - type: text_sensor
+          id: sensor_plant_fan
     - name: Lights Screen
       entities:
         - id: light_all_lights
           type: light
         - id: light_rgb_lights
+          type: light
+        - id: light_track
+          type: light
+        - id: light_strip_light
           type: light
         - type: command
           name: "color scene"
@@ -320,6 +396,8 @@ homeThing:
     - name: Settings Screen
       show_version: True
       entities:
+        - id: dark_mode
+          type: switch
         - id: backlight
           type: light
         - id: restart_switch

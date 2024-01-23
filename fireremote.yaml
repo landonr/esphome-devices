@@ -11,10 +11,10 @@ esphome:
           id: strip_light
           brightness: 100%
           effect: Snow
-      # - homeassistant.service:
-      #     service: button.press
-      #     data:
-      #       entity_id: "button.catfeeder_node_feed_single"
+      - homeassistant.service:
+          service: button.press
+          data:
+            entity_id: "button.catfeeder_node_feed_single"
       - delay: 3s
       - light.turn_off:
           id: side_light
@@ -27,7 +27,7 @@ esp32:
   #   type: esp-idf
   #   version: recommended
 
-logger:
+web_server:
 api:
 ota:
 wifi:
@@ -53,7 +53,7 @@ external_components:
       ref: main
       # type: local
       # path: ../homeThing/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout, homeThingAppWeather]
     refresh: 0s
   - source:
       type: git
@@ -78,13 +78,6 @@ external_components:
   #     UnitEncoderC
   #   ]
 
-  # - source: github://pr#5214 # used to load images on compile
-  # - source: # used to load fonts on compile
-  #     type: local
-  #     path: ../compile-online-image/esphome/components/
-  #   components: [ image ]
-  #   refresh: 0s
-
   - source: github://pr#5254 # used to load fonts on compile
   # - source: # used to load fonts on compile
   #     type: local
@@ -94,9 +87,10 @@ external_components:
 
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
+  weather: !include homeConfig/weather.yaml
+  # logger: !include ../homeThing/common/logger.yaml
   # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
   # unit_encoder: !include ../homeThing/common/UnitEncoderC.yaml
-  # home_text_sensor: !include homeConfig/text_sensor.yaml
   # home_light: !include homeConfig/light.yaml
   # home_switch: !include homeConfig/switch.yaml
   # ip5306: !include ../homeThing/common/m5stack-fire/ip5306.yaml
@@ -114,14 +108,13 @@ packages:
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/m5stack-fire/ip5306.yaml, # power management and screen backlight
-      common/m5stack-fire/sleep.yaml, # deep sleep
-      # common/m5stack-fire/binary_sensor.yaml, # buttons
       common/m5stack-fire/binary_sensor_rotary.yaml, # buttons
       common/m5stack-fire/backlight.yaml, # backlight
-      # common/m5stack-fire/sidelight.yaml, # sidelight
       common/UnitEncoderC.yaml, # encoder
-      common/images.yaml, # boot screen image
       common/settings.yaml, # settings screen
+      common/logger.yaml, # logger
+      # common/m5stack-fire/sidelight.yaml, # sidelight
+      # common/images.yaml, # boot screen image
     ]
     refresh: 0s
 
@@ -154,6 +147,7 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  draw_bottom_menu: true
 
 switch:
   - platform: template
@@ -170,14 +164,11 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
   header_height: 24
   margin_size: 8
   slider_margin_size: 6
   scroll_bar_width: 8
   bottom_bar_margin: 8
-  now_playing_max_lines: 5
-  draw_now_playing_bottom_menu: true
   draw_battery_level: true
   draw_volume_level: false
   draw_header_time: true
@@ -193,7 +184,26 @@ homeThingAppBreakout:
   display: my_display
   display_state: display_state_id
 
+homeThingAppWeather:
+  id: weather
+  display: my_display
+  display_state: display_state_id
+  temperature_sensor: weather_temperature
+  humidity_sensor: weather_humidity
+  condition_sensor: weather_state
+  images:
+    cloudy: weather_cloudy
+    fog: weather_fog
+    snow: weather_snow
+    sunny: weather_sunny
+    rainy: weather_rainy
+    night: weather_night
+
 light:
+  - platform: homeassistant_component
+    id: light_desk_lamp
+    entity_id: light.desk_lamp
+    name: Desk Lamp
   - platform: homeassistant_component
     id: light_rgb_lights
     entity_id: light.rgb_lights
@@ -213,12 +223,35 @@ light:
           name: Rainbow Effect
           speed: 20
           width: 15
+      - addressable_color_wipe:
+          name: Snow
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: true
+      - addressable_fireworks:
+          name: Fireworks Effect
+          update_interval: 32ms
+          spark_probability: 10%
+          use_random_color: True
+          fade_out_rate: 120
+      - addressable_scan:
+          name: Scan Effect
+          move_interval: 100ms
+          scan_width: 1
   - platform: esp32_rmt_led_strip
+    chipset: WS2812
     rgb_order: RGB
     pin: GPIO26
     num_leds: 33
     rmt_channel: 2
-    chipset: WS2812
     name: "${friendly_name} Strip Light"
     restore_mode: ALWAYS_OFF
     id: strip_light
@@ -241,6 +274,7 @@ light:
               num_leds: 1
           add_led_interval: 100ms
           reverse: true
+
 homeThing:
   id: homeThingMenu
   header:
@@ -249,10 +283,10 @@ homeThing:
     - now_playing
     - snake
     - breakout
+    - weather
   settings:
     mode: rotary
     display_timeout_while_charging: 30
-  sleep_switch: sleep_toggle
   backlight: backlight
   battery:
     battery_percent: battery_percent
@@ -260,6 +294,7 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   display: my_display
   display_state: display_state_id
   on_redraw:
@@ -268,6 +303,8 @@ homeThing:
   home_screen:
     name: root
     entities:
+        - id: strip_light
+          type: light
         - type: command
           name: "feed lil freak"
           command:
@@ -307,7 +344,11 @@ homeThing:
       entities:
         - id: light_rgb_lights
           type: light
+        - id: light_desk_lamp
+          type: light
         - id: strip_light
+          type: light
+        - id: side_light
           type: light
         - type: command
           name: "color lights"
@@ -335,6 +376,7 @@ homeThing:
           type: light
         - id: backlight
           type: light
+      # settings.yaml
         - id: "restart_switch"
           type: switch
         - id: wifi_ssid

@@ -62,7 +62,7 @@ external_components:
   - source: 
       type: git
       url: https://github.com/landonr/lilygo-tdisplays3-esphome/
-      # ref: sept2023
+      ref: v0.1
     refresh: 1d
     components: [tdisplays3]
   # - source: github://pr#5214
@@ -199,8 +199,6 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
-  now_playing_max_lines: 10
   dark_mode: dark_mode
 
 homeThingAppNowPlaying:
@@ -249,6 +247,7 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   home_screen:
     name: root
     entities:

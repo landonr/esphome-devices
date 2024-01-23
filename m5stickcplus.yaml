@@ -1,15 +1,5 @@
 esphome:
   name: m5stickcplus
-  on_boot:
-    priority: 600.0
-    then:
-      - delay: 45s
-      - if:
-          condition:
-            not:
-              - wifi.connected:
-          then:
-            - switch.turn_on: sleep_toggle
 
 esp32:
   board: m5stick-c
@@ -67,6 +57,7 @@ external_components:
   #   components: [ image ]
   - source: github://pr#5254 # used to load fonts on compile
     components: [ font ]
+    refresh: 0s
 
 
 packages:
@@ -78,24 +69,22 @@ packages:
       common/fonts.yaml, # default font
       common/icon_fonts.yaml, # material icons
       common/m5stack-stickc/axp192-marty.yaml, # power management and screen backlight
-      common/m5stack-stickc/sleep.yaml, # deep sleep
       common/m5stack-stickc/binary_sensor.yaml, # buttons
       common/m5stack-stickc/MiniEncoderC.yaml, # rotary encoder and built in led
       common/images.yaml # boot screen image
     ]
     refresh: 0s
   # home_media_player: !include homeConfig/media_player_light.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   # axp192-marty: !include ../homeThing/common/m5stack-stickc/axp192-marty.yaml # power management and screen backlight
-  # sleep: !include ../homeThing/common/m5stack-stickc/sleep.yaml # deep sleep
   # binary_sensor: !include ../homeThing/common/m5stack-stickc/binary_sensor.yaml # buttons
   # binary_sensor_voice: !include ../homeThing/common/m5stack-stickc/binary_sensor_voice.yaml # buttons
   # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderCVoice.yaml # rotary encoder and built in led
+  # mini_encoder_c: !include ../homeThing/common/m5stack-stickc/MiniEncoderC.yaml # rotary encoder and built in led
 
 substitutions:
   friendly_name: "homeThingM5StickPlus"
@@ -117,6 +106,34 @@ light:
     id: light_rgb_lights
     entity_id: light.rgb_lights
     name: Color Lights 
+  - platform: esp32_rmt_led_strip
+    chipset: WS2812
+    rgb_order: GRB
+    pin: GPIO32
+    num_leds: 42
+    rmt_channel: 2
+    name: "${friendly_name} Strip Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+    id: strip_light
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+          name: Rainbow Effect
+          speed: 10
+          width: 50
+      - addressable_color_wipe:
+          name: Snow
+          colors:
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 1
+          add_led_interval: 100ms
+          reverse: true
 
 color:
   - id: my_primary_accent
@@ -132,8 +149,6 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
-  draw_now_playing_bottom_menu: True
   draw_battery_level: True
   colors:
     accent_primary: my_primary_accent
@@ -200,6 +215,7 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  draw_bottom_menu: True
 
 remote_transmitter:
   pin: GPIO9
@@ -219,13 +235,11 @@ switch:
 homeThing:
   id: homeThingMenu
   settings:
-    sleep_after: 14400
     display_timeout: 10
     display_timeout_while_charging: 10
   apps: 
     - now_playing
     - breakout
-  sleep_switch: sleep_toggle
   backlight: backlight
   display_state: display_state_id
   battery:
@@ -234,6 +248,7 @@ homeThing:
   display: my_display
   boot:
     api_connected: api_connected
+    launch_image: launch_image
   on_redraw:
     then:
       component.update: my_display
@@ -255,6 +270,7 @@ display:
     cs_pin: GPIO5
     dc_pin: GPIO23
     reset_pin: GPIO18
+    backlight_pin: no
     rotation: 0
     update_interval: 3600s
     lambda: |-

@@ -63,7 +63,6 @@ packages:
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
   home_media_player: !include homeConfig/media_player_light.yaml
-  home_text_sensor: !include homeConfig/text_sensor.yaml
   home_light: !include homeConfig/light.yaml
   home_switch: !include homeConfig/switch.yaml
   remote_package:
@@ -117,7 +116,6 @@ homeThingDisplayState:
   font_large_heavy: large_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
 
 homeThing:
   id: homeThingMenu
@@ -143,6 +141,7 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
 
 display:
   - platform: st7789v

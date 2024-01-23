@@ -149,9 +149,7 @@ homeThingDisplayState:
   font_large_heavy: large_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
   dark_mode: dark_mode
-  draw_now_playing_bottom_menu: false
   colors:
     accent_primary: my_primary_accent
 
@@ -160,7 +158,6 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
-  # up_button: sw4
 
 # homeThingAppSnake:
 #   id: snake
@@ -194,13 +191,14 @@ image:
     resize: 50x50
   - id: launch_image
     # file: https://avatars.githubusercontent.com/u/2607659?s=64
-    # file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/homeThingLogo.svg"
+    file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/homeThingLogo.svg"
     # file: "https://raw.githubusercontent.com/landonr/homeThing/main/docs/lights.jpg"
     # file: "http://cloud.ine.ru/s/JDbPr6W4QXnXKgo/download"
     # file: "http://172.16.1.67:8123/api/media_player_proxy/media_player.beam?token=a955fc758234e7ac5d9e484b5dc401970113a347dc2de2c5f4f1a70ab4fde614&cache=45ec98127e9e4fe0"
-    file: https://upload.wikimedia.org/wikipedia/commons/b/b6/SIPI_Jelly_Beans_4.1.07.tiff
+    # file: https://upload.wikimedia.org/wikipedia/commons/b/b6/SIPI_Jelly_Beans_4.1.07.tiff
     resize: 64x64
-    type: RGB24
+    # type: RGB24
+    type: TRANSPARENT_BINARY
     
 
 sensor:
@@ -245,6 +243,7 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   header:
     time_id: esptime
   # battery:
