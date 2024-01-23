@@ -84,7 +84,7 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
   weather: !include homeConfig/weather.yaml
-  logger: !include ../homeThing/common/logger.yaml
+  # logger: !include ../homeThing/common/logger.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -109,6 +109,7 @@ packages:
       common/tdisplay-s3/backlight.yaml, # backlight
       common/settings.yaml, # settings screen
       common/nowPlayingImage.yaml, # settings screen
+      common/logger.yaml, # logger
       # common/images.yaml # boot screen image
     ]
     refresh: 0s

@@ -78,13 +78,6 @@ external_components:
   #     UnitEncoderC
   #   ]
 
-  # - source: github://pr#5214 # used to load images on compile
-  # - source: # used to load fonts on compile
-  #     type: local
-  #     path: ../compile-online-image/esphome/components/
-  #   components: [ image ]
-  #   refresh: 0s
-
   - source: github://pr#5254 # used to load fonts on compile
   # - source: # used to load fonts on compile
   #     type: local
@@ -95,7 +88,7 @@ external_components:
 packages:
   home_media_player: !include homeConfig/media_player_light.yaml
   weather: !include homeConfig/weather.yaml
-  logger: !include ../homeThing/common/logger.yaml
+  # logger: !include ../homeThing/common/logger.yaml
   # binary_sensor_rotary: !include ../homeThing/common/m5stack-fire/binary_sensor_rotary.yaml
   # unit_encoder: !include ../homeThing/common/UnitEncoderC.yaml
   # home_light: !include homeConfig/light.yaml
@@ -122,6 +115,7 @@ packages:
       common/UnitEncoderC.yaml, # encoder
       common/images.yaml, # boot screen image
       common/settings.yaml, # settings screen
+      common/logger.yaml, # logger
     ]
     refresh: 0s
 
@@ -281,6 +275,7 @@ light:
               num_leds: 1
           add_led_interval: 100ms
           reverse: true
+
 homeThing:
   id: homeThingMenu
   header:
