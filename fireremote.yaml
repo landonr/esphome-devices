@@ -53,7 +53,7 @@ external_components:
       ref: main
       # type: local
       # path: ../homeThing/components
-    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout ]
+    components: [homeThing, homeThingDisplayState, homeThingApp, homeThingAppNowPlaying, homeThingAppSnake, homeThingAppBreakout, homeThingAppWeather]
     refresh: 0s
   - source:
       type: git

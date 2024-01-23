@@ -150,7 +150,6 @@ homeThingDisplayState:
   font_material_large: material_font_large
   font_material_small: material_font_small
   launch_image: launch_image
-  draw_now_playing_bottom_menu: True
   draw_battery_level: True
   colors:
     accent_primary: my_primary_accent
@@ -217,6 +216,7 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  draw_bottom_menu: True
 
 remote_transmitter:
   pin: GPIO9

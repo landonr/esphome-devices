@@ -150,7 +150,6 @@ homeThingDisplayState:
   font_material_large: material_font_large
   font_material_small: material_font_small
   dark_mode: dark_mode
-  draw_now_playing_bottom_menu: false
   colors:
     accent_primary: my_primary_accent
 
@@ -159,7 +158,6 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
-  # up_button: sw4
 
 # homeThingAppSnake:
 #   id: snake
