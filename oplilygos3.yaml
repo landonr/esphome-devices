@@ -6,10 +6,15 @@ esphome:
     board_build.arduino.memory_type: qio_opi
   on_boot: 
     then:
-    - delay: 5s
+    - light.turn_on:
+        id: backlight
+        brightness: 10%
+    - delay: 0.5s
     - light.turn_on:
         id: backlight
         brightness: 100%
+        transition_length: 0.5s
+
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -21,58 +26,12 @@ esp32:
   #   type: esp-idf
   #   version: recommended
 
-# Enable logging
-logger:
-  logs:
-    esp32.preferences: INFO
-    component: ERROR
-    sensor: INFO
-    switch: INFO
-    main: INFO
-    binary_sensor: WARN
-    text_sensor: WARN
-    homething.menu.display: WARN
-    homething.menu.base: INFO
-    homething.boot: INFO
-    homething.menu.control: INFO
-    homething.menu.screen: INFO
-    homething.animation: INFO
-    homething.menu.text_helpers: INFO
-    homething.nowplaying.control: WARN
-    homeassistant.media_player_group: WARN
-    homeassistant.component: WARN
-    homeassistant.light: WARN
-    homeassistant.switch: WARN
-    homeassistant.text_sensor: WARN
-    homeassistant.media_player_base: WARN
-    homeassistant.media_player_tv: WARN
-    cover: INFO
-    light: INFO
-    api: INFO
-    voice_assistant: INFO
-  level: DEBUG
-  # hardware_uart: USB_SERIAL_JTAG
-  # level: DEBUG
-
 # Enable Home Assistant API
 api:
 
 ota:
 
-substitutions:
-  friendly_name: "s3 proto"
-  rotary_pin_a: "10"
-  rotary_pin_b: "11"
-  medium_font_size: "17"
-  # sda_pin: "18"
-  # scl_pin: "17"
-  # screen_left_pin: "GPIO0"
-  # screen_right_pin: "GPIO14"
-  battery_pin: "4"
-  # log_level: "DEBUG"
-  launch_image_size: 100x100
-  # launch_image_file: "s3.png"
-  launch_image_type: "RGBA"
+web_server:
 
 wifi:
   ssid: !secret wifi_ssid
@@ -125,6 +84,7 @@ packages:
   home_switch: !include homeConfig/switch.yaml
   plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
   weather: !include homeConfig/weather.yaml
+  logger: !include ../homeThing/common/logger.yaml
   # device_base: !include ../homeThing/common/device_base.yaml
   # fonts: !include ../homeThing/common/fonts.yaml
   # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
@@ -152,10 +112,24 @@ packages:
     ]
     refresh: 0s
 
+substitutions:
+  friendly_name: "s3 proto"
+  rotary_pin_a: "10"
+  rotary_pin_b: "11"
+  medium_font_size: "16"
+  # sda_pin: "18"
+  # scl_pin: "17"
+  # screen_left_pin: "GPIO0"
+  # screen_right_pin: "GPIO14"
+  battery_pin: "4"
+  # log_level: "DEBUG"
+  launch_image_size: 100x100
+  launch_image_file: "http://www.katkam.ca/api/pic"
+  launch_image_type: "RGBA"
+
 i2s_audio:
   i2s_lrclk_pin: 3 # WS
   i2s_bclk_pin: 2 # SCK
-  # i2s_mclk_pin: GPIO8 # MCLK
 
 microphone:
   - platform: i2s_audio
@@ -191,7 +165,7 @@ voice_assistant:
         return;
 
 remote_transmitter:
-  pin: GPIO12
+  pin: GPIO13
   # Infrared remotes use a 50% carrier signal
   carrier_duty_percent: 50%
   id: infrared
@@ -243,11 +217,6 @@ switch:
     name: "Dark Mode"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
-  - platform: output
-    name: "${friendly_name} Light"
-    id: lightSwitch
-    output: lightOutput
-    restore_mode: ALWAYS_ON
   - platform: template
     id: voice_assistant_switch
     name: ${friendly_name} Voice Assistant
@@ -260,12 +229,6 @@ switch:
       then:
         voice_assistant.stop:
 
-output:
-  - platform: gpio
-    pin: 13
-    id: lightOutput
-    # inverted: True
-
 homeThingDisplayState:
   id: display_state_id
   draw_battery_level: true
@@ -275,8 +238,6 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
-  now_playing_max_lines: 10
   dark_mode: dark_mode
   colors:
     accent_primary: my_primary_accent
@@ -286,6 +247,7 @@ homeThingAppNowPlaying:
   media_player_group: media_group_component
   display: my_display
   display_state: display_state_id
+  now_playing_image: media_player_image
 
 homeThingAppSnake:
   id: snake
@@ -324,6 +286,55 @@ homeThingAppWeather:
     rainy: weather_rainy
     night: weather_night
 
+# online media player image
+#
+# home assistant sensor
+# - needs an image proxy docker running to resize the image 
+# - https://hub.docker.com/r/darthsim/imgproxy/
+#
+#   template:
+#     - sensor:
+#         - name: Media Player Image Proxy URL
+#           state: |
+#             {{ 
+#               state_attr(states.sensor.active_player.state, "entity_picture") | base64_encode
+#             }}
+#           attributes:
+#             url: >
+#               {% set homeAssistantURL = "http://172.16.1.67:8123" %}
+#               {% set imageProxyURL = "img.landorghini.com/insecure/rs:fill:170:170/" %}
+#               {% set url = homeAssistantURL + state_attr(states.sensor.active_player.state, "entity_picture") %}
+#               {% set base64url_encoded_url = (url | base64_encode) | replace('+', '-') | replace('/', '_') | replace('=', '') %}
+#               {{ imageProxyURL + base64url_encoded_url }}
+
+text_sensor:
+  - platform: homeassistant
+    id: entity_picture
+    entity_id: sensor.media_player_image_proxy_url
+    attribute: url
+    on_value:
+      then:
+      - logger.log:
+          level: debug
+          format: "new online_image %s"
+          args: [ 'x.c_str()' ]
+      - online_image.set_url:
+          id: media_player_image
+          url: !lambda 'return ("https://" + x + ".png").c_str();'
+
+online_image:
+  - url: "http://172.16.1.23:8080/insecure/rs:fill:170:170/"
+    id: media_player_image
+    type: RGB565
+    on_download_finished:
+      - logger.log:
+          level: debug
+          format: "new online_image downloaded %s"
+          args: [ 'id(entity_picture).state' ]
+      - component.update: my_display
+    on_error:
+      - logger.log: "Could not download the online image"
+
 homeThing:
   id: homeThingMenu
   apps: 
@@ -333,7 +344,7 @@ homeThing:
     - cat_toy
     - weather
   settings:
-    sleep_after: 14400
+    sleep_after: 3600
     display_timeout_while_charging: 30
     idle_app: now_playing
   backlight: backlight
@@ -351,11 +362,10 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   home_screen:
     name: root
     entities:
-      # - id: lightSwitch
-      #   type: switch
       - id: light_rgb_lights
         type: light
       - type: command

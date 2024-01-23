@@ -149,7 +149,6 @@ homeThingDisplayState:
   font_large_heavy: large_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
   dark_mode: dark_mode
   draw_now_playing_bottom_menu: false
   colors:
@@ -245,6 +244,7 @@ homeThing:
   boot:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
+    launch_image: launch_image
   header:
     time_id: esptime
   # battery:
