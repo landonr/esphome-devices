@@ -149,7 +149,6 @@ homeThingDisplayState:
   font_large_heavy: large_heavy_font
   font_material_large: material_font_large
   font_material_small: material_font_small
-  launch_image: launch_image
   draw_battery_level: True
   colors:
     accent_primary: my_primary_accent
@@ -249,6 +248,7 @@ homeThing:
   display: my_display
   boot:
     api_connected: api_connected
+    launch_image: launch_image
   on_redraw:
     then:
       component.update: my_display
