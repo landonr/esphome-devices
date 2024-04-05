@@ -7,14 +7,6 @@ esphome:
           id: side_light
           brightness: 100%
           effect: Rainbow Effect
-      - light.turn_on:
-          id: strip_light
-          brightness: 100%
-          effect: Snow
-      - homeassistant.service:
-          service: button.press
-          data:
-            entity_id: "button.catfeeder_node_feed_single"
       - delay: 3s
       - light.turn_off:
           id: side_light
@@ -246,34 +238,51 @@ light:
           name: Scan Effect
           move_interval: 100ms
           scan_width: 1
-  - platform: esp32_rmt_led_strip
-    chipset: WS2812
-    rgb_order: RGB
-    pin: GPIO26
-    num_leds: 33
-    rmt_channel: 2
-    name: "${friendly_name} Strip Light"
-    restore_mode: ALWAYS_OFF
-    id: strip_light
-    default_transition_length: 0s
-    effects:
-      - addressable_rainbow:
-          name: Rainbow Effect
-          speed: 10
-          width: 50
-      - addressable_color_wipe:
-          name: Snow
-          colors:
-            - red: 100%
-              green: 0%
-              blue: 0%
-              num_leds: 30
-            - red: 100%
-              green: 100%
-              blue: 100%
-              num_leds: 1
-          add_led_interval: 100ms
-          reverse: true
+
+sensor:
+  - platform: pulse_meter
+    pin: 
+      number: GPIO26
+      # allow_other_uses: true
+      # inverted: true
+      mode:
+        input: true
+        pulldown: true
+    unit_of_measurement: 'RPM'
+    name: "${friendly_name} Wheel RPM"
+    id: wheel_rpm
+    internal_filter: 500ms
+    filters:
+      - filter_out: NaN
+      - multiply: 6 # Convert pulses per minute to RPM
+      - throttle_average: 10s
+    total:
+      unit_of_measurement: 'Revolutions Today'
+      id: total_rpm
+      name: "${friendly_name} Total RPM"
+      on_value: 
+        then:
+          - sensor.template.publish:
+              id: minute_rpm
+              state: !lambda |-
+                if (id(minute_rpm).has_state() && id(minute_rpm).state > 0.0) {
+                  return id(minute_rpm).state + 1.0;
+                }
+                return 1.0;
+  - platform: total_daily_energy
+    name: "${friendly_name} Total Daily RPM"
+    power_id: wheel_rpm
+    id: daily_rpm
+    unit_of_measurement: 'Revolutions'
+  - platform: template
+    name: "${friendly_name} Current Minute RPM"
+    # power_id: total_rpm
+    id: minute_rpm
+    unit_of_measurement: 'Revolutions'
+    filters:
+      - timeout:
+          timeout: 15s
+          value: 0
 
 homeThing:
   id: homeThingMenu
@@ -301,10 +310,12 @@ homeThing:
     then:
       component.update: my_display
   home_screen:
-    name: root
+    name: Fire!
     entities:
-        - id: strip_light
-          type: light
+        - id: wheel_rpm
+          type: sensor
+        - id: daily_rpm
+          type: sensor
         - type: command
           name: "feed lil freak"
           command:
@@ -346,8 +357,8 @@ homeThing:
           type: light
         - id: light_desk_lamp
           type: light
-        - id: strip_light
-          type: light
+        # - id: strip_light
+        #   type: light
         - id: side_light
           type: light
         - type: command

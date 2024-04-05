@@ -29,7 +29,7 @@ sensor:
   - platform: ads1115 # Soil Moisture Sensor Raw
     name: "${friendly_name} Soil Moisture Raw"
     id: $soil_moisture_raw_id
-    multiplexer: 'A0_GND'
+    multiplexer: ${ads1115_multiplexer}
     gain: $ads1115_gain
     update_interval: 6s
     filters:
@@ -39,7 +39,7 @@ sensor:
   - platform: ads1115
     name: "${friendly_name} Soil Moisture"
     id: $soil_moisture_id
-    multiplexer: 'A0_GND'
+    multiplexer: ${ads1115_multiplexer}
     gain: $ads1115_gain
     update_interval: 6s
     unit_of_measurement: "%"
