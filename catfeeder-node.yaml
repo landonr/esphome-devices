@@ -95,6 +95,15 @@ switch:
 
 number:
   - platform: template
+    id: max_servings_per_day
+    name: "Max Servings per day"
+    optimistic: true
+    min_value: 1
+    max_value: 20
+    restore_value: True
+    initial_value: 12
+    step: 1
+  - platform: template
     name: "Grams per day"
     id: grams_per_day
     optimistic: true
@@ -221,9 +230,11 @@ script:
     then:
       - if:
           condition:
-            or:
-              - switch.is_off: skip_next_meal
+            - or:
               - lambda: !lambda return force;
+              - and:
+                - lambda: !lambda return int(id(servings_today).state) < int(id(max_servings_per_day).state);
+                - switch.is_off: skip_next_meal
           then:
             - number.set:
                 id: active_servings
@@ -233,41 +244,52 @@ script:
                   lambda: |-
                     return id(active_servings).state > 0;
                 then:
-                - logger.log:
-                    format: "Feeding meal active= %d, total= %d, skip=%d"
-                    args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state' ]
-                - sensor.template.publish:
-                    id: active_servings_sensor
-                    state: !lambda 'return id(active_servings).state;'
-                - fan.turn_on: 
-                    id: serving_motor
-                - if:
-                    condition:
-                      binary_sensor.is_on: feed_clicker
-                    then:
-                    - wait_until:
-                        binary_sensor.is_off: feed_clicker
-                    - wait_until:
-                        binary_sensor.is_on: feed_clicker
-                    - wait_until:
-                        binary_sensor.is_off: feed_clicker
-                    - fan.turn_off: serving_motor
-                    else:
-                    - wait_until:
-                        binary_sensor.is_on: feed_clicker
-                    - wait_until:
-                        binary_sensor.is_off: feed_clicker
-                    - fan.turn_off: serving_motor
-                - number.increment: servings_today
-                - number.increment: servings_since_refill
-                - number.increment: servings_total
-                - number.decrement: active_servings
-                - text_sensor.template.publish:
-                    id: last_feed
-                    state: !lambda |-
-                      auto timeSting = id(sntp_time).now().strftime("%c");
-                      return timeSting;
-                - delay: 1s
+                  - if:
+                      condition:
+                        - lambda: !lambda return int(id(servings_today).state) > int(id(max_servings_per_day).state);
+                      then:
+                        - logger.log:
+                            format: "Max servigns reached= %f"
+                            args: [ 'id(servings_today).state' ]
+                            level: INFO
+                        - number.decrement: active_servings
+                      else:
+                        - logger.log:
+                            format: "Feeding meal active= %f, total= %f, skip=%d, max=%f, today=%f"
+                            args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state', 'id(max_servings_per_day).state', 'id(servings_today).state']
+                            level: INFO
+                        - sensor.template.publish:
+                            id: active_servings_sensor
+                            state: !lambda 'return id(active_servings).state;'
+                        - fan.turn_on: 
+                            id: serving_motor
+                        - if:
+                            condition:
+                              binary_sensor.is_on: feed_clicker
+                            then:
+                            - wait_until:
+                                binary_sensor.is_off: feed_clicker
+                            - wait_until:
+                                binary_sensor.is_on: feed_clicker
+                            - wait_until:
+                                binary_sensor.is_off: feed_clicker
+                            - fan.turn_off: serving_motor
+                            else:
+                            - wait_until:
+                                binary_sensor.is_on: feed_clicker
+                            - wait_until:
+                                binary_sensor.is_off: feed_clicker
+                            - fan.turn_off: serving_motor
+                        - number.increment: servings_today
+                        - number.increment: servings_since_refill
+                        - number.increment: servings_total
+                        - number.decrement: active_servings
+                        - text_sensor.template.publish:
+                            id: last_feed
+                            state: !lambda |-
+                              auto timeSting = id(sntp_time).now().strftime("%c");
+                              return timeSting;
+                        - delay: 1s
             - number.to_min: active_servings
       - if:
           condition:
@@ -347,7 +369,7 @@ time:
           - number.to_min: bonus_treats_internal
   - platform: sntp
     on_time:
-      - hours: 4,8,17
+      - hours: 4,7,17
         seconds: 0
         minutes: 0
         then:
@@ -363,13 +385,13 @@ text_sensor:
   - platform: template
     name: "Feed schedule"
     lambda: !lambda |-
-      return {"04:00, 08:00, 17:00"};
+      return {"06:00, 16:00, 19:00"};
   - platform: template
     name: "Next feed"
     update_interval: 1s
     lambda: !lambda |-
       int current_hour = id(sntp_time).now().hour;
-      std::vector<int> ordered_list = {4, 8, 19};
+      std::vector<int> ordered_list = {6, 16, 19};
       bool skip_next_higher = id(skip_next_meal).state;
 
       int next_hour = 0;

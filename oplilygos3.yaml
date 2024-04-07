@@ -72,49 +72,33 @@ external_components:
       ref: v0.1
     refresh: 0s
     components: [tdisplays3]
-  - source: github://pr#5254 # used to load fonts on compile
-  # - source:
-  #     type: local
-  #     path: ../compile-online-image/esphome/components/
-    components: [ font ]
-    refresh: 0s
   - source: github://pr#4710
     components: [ online_image ]
 
 packages:
+  # common
+  device_base: github://landonr/homeThing/common/device_base.yaml
+  fonts: github://landonr/homeThing/common/fonts.yaml
+  icon_fonts: github://landonr/homeThing/common/icon_fonts.yaml
+  settings: github://landonr/homeThing/common/settings.yaml
+  images: github://landonr/homeThing/common/images.yaml
+  nowPlayingImage: github://landonr/homeThing/common/nowPlayingImage.yaml
+  voice_assistant: github://landonr/homeThing/common/voice_assistant.yaml
+
+  # ipod
+  battery: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
+  sleep: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
+  rotary: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
+
+  #tdisplay s3
+  backlight: github://landonr/homeThing/common/tdisplay-s3/backlight.yaml
+  binary_sensors: github://landonr/homeThing/common/tdisplay-s3/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
+  
+  # home
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
   plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
   weather: !include homeConfig/weather.yaml
-  # logger: !include ../homeThing/common/logger.yaml
-  # device_base: !include ../homeThing/common/device_base.yaml
-  # fonts: !include ../homeThing/common/fonts.yaml
-  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
-  # ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
-  # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
-  # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
-  # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
-  # s3_backlight: !include ../homeThing/common/tdisplay-s3/backlight.yaml
-  # settings: !include ../homeThing/common/settings.yaml
-  remote_package:
-    url: https://github.com/landonr/homeThing
-    ref: main
-    files: [
-      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      common/fonts.yaml, # default font
-      common/icon_fonts.yaml, # material icons
-      common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
-      common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml, # used for button controls
-      common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
-      common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
-      common/tdisplay-s3/backlight.yaml, # backlight
-      common/settings.yaml, # settings screen
-      common/nowPlayingImage.yaml, # settings screen
-      common/logger.yaml, # logger
-      # common/images.yaml # boot screen image
-    ]
-    refresh: 0s
 
 substitutions:
   friendly_name: "s3 proto"
@@ -128,49 +112,11 @@ substitutions:
   battery_pin: "4"
   # log_level: "DEBUG"
   launch_image_size: 100x100
-  launch_image_file: "http://www.katkam.ca/api/pic"
+  launch_image_file: "https://freight.cargo.site/w/750/i/7a68102cb75b1ad474df99f67b00a211e22968d385bba6f0709b469787db051d/homething-logo-white.png"
   launch_image_type: "RGBA"
-
-i2s_audio:
-  i2s_lrclk_pin: 3 # WS
-  i2s_bclk_pin: 2 # SCK
-
-microphone:
-  - platform: i2s_audio
-    id: external_mic
-    i2s_din_pin: 1 # SD
-    adc_type: external
-    pdm: false
-    # bits_per_sample: 32bit
-    channel: left
-
-voice_assistant:
-  microphone: external_mic
-  on_start:
-    then:
-      lambda: |-
-        id(homeThingMenu)->clearNotifications();
-        id(homeThingMenu)->addNotification("Voice Assistant", "Listening", "", true);
-        return;
-  on_error:
-    then:
-      lambda: |-
-        id(homeThingMenu)->addNotification("Voice Assistant", "Error", message, false);
-        return;
-  on_stt_end:
-    then:
-      lambda: |-
-        id(homeThingMenu)->addNotification("Voice Assistant", "Understood", x, false);
-        return;
-  on_tts_start:
-    then:
-      lambda: |-
-        id(homeThingMenu)->addNotification("Voice Assistant", "Finished", x, true);
-        return;
 
 remote_transmitter:
   pin: GPIO13
-  # Infrared remotes use a 50% carrier signal
   carrier_duty_percent: 50%
   id: infrared
 
@@ -194,7 +140,26 @@ light:
   - platform: homeassistant_component
     id: light_strip_light
     entity_id: light.homethingm5stickplus_strip_light
-    name: Strip Light
+    name: Monitor Backlight
+  - platform: homeassistant_component
+    id: light_fire_strip
+    entity_id: light.homethingfireremote_strip_light
+    name: Fire Light
+  - platform: esp32_rmt_led_strip
+    chipset: WS2812
+    rgb_order: RGB
+    pin: GPIO43
+    num_leds: 42
+    rmt_channel: 2
+    name: "${friendly_name} Strip Light"
+    restore_mode: RESTORE_DEFAULT_OFF
+    id: strip_light
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+          name: Rainbow Effect
+          speed: 10
+          width: 50
 
 display:
   - platform: tdisplays3
@@ -204,12 +169,6 @@ display:
     lambda: |-
       id(homeThingMenu)->draw_menu_screen();
       return;
-
-cover:
-  - platform: homeassistant_component
-    entity_id: "cover.megadesk_cover"
-    name: "Megadesk"
-    id: cover_megadesk
 
 switch:
   - platform: homeassistant_component
@@ -221,6 +180,7 @@ switch:
     name: "Dark Mode"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
+    internal: true
   - platform: template
     id: voice_assistant_switch
     name: ${friendly_name} Voice Assistant
@@ -232,6 +192,21 @@ switch:
     turn_off_action: 
       then:
         voice_assistant.stop:
+  - platform: template
+    name: "Infared Light"
+    id: switch_ir_light
+    optimistic: true
+    internal: True
+    turn_on_action:
+      - remote_transmitter.transmit_nec:
+          address: 0xEF00
+          command: 0xFC03
+          command_repeats: 1
+    turn_off_action:
+      - remote_transmitter.transmit_nec:
+          address: 0xEF00
+          command: 0xFD02
+          command_repeats: 1
 
 homeThingDisplayState:
   id: display_state_id
@@ -319,8 +294,10 @@ homeThing:
     media_players_loaded: media_players_loaded_sensor
     launch_image: launch_image
   home_screen:
-    name: root
+    name: homeThing
     entities:
+      - id: strip_light
+        type: light
       - id: light_rgb_lights
         type: light
       - type: command
@@ -335,32 +312,15 @@ homeThing:
   screens:
     - name: Desk Screen
       entities:
-        - type: cover
-          id: cover_megadesk
-        - type: command
-          name: "desk nudge up"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.mega_homething_desk_position_nudge_up"
-        - type: command
-          name: "desk nudge down"
-          command:
-            - homeassistant.service:
-                service: button.press
-                data:
-                  entity_id: "button.mega_homething_desk_position_nudge_down"
         - id: light_desk_lamp
           type: light
-    - name: Plants
-      entities:
-        - type: text_sensor
-          id: sensor_plant_temp
-        - type: text_sensor
-          id: sensor_plant_humidity
-        - type: text_sensor
-          id: sensor_plant_fan
+        - type: command
+          name: "TV Power"
+          command:
+            - remote_transmitter.transmit_nec:
+                address: 0xEAC7
+                command: 0x9768
+                command_repeats: 1
     - name: Lights Screen
       entities:
         - id: light_all_lights
@@ -371,16 +331,25 @@ homeThing:
           type: light
         - id: light_strip_light
           type: light
+        - id: strip_light
+          type: light
+        - id: switch_ir_light
+          type: switch
         - type: command
           name: "color scene"
           command:
             - homeassistant.service:
-                service: script.warm
+                service: script.colors
         - type: command
           name: "auto scene"
           command:
             - homeassistant.service:
-                service: script.auto
+                service: script.warm
+        - type: command
+          name: "bright scene"
+          command:
+            - homeassistant.service:
+                service: script.bright
         - type: command
           name: "hell scene"
           command:
@@ -393,6 +362,37 @@ homeThing:
           command:
             - homeassistant.service:
                 service: script.off_script
+    - name: Plants
+      entities:
+        - type: text_sensor
+          id: sensor_plant_temp
+        - type: text_sensor
+          id: sensor_plant_humidity
+        - type: text_sensor
+          id: sensor_plant_fan
+    - name: Desk Speaker
+      entities:
+        - type: command
+          name: "Reset Speaker"
+          command:
+            - remote_transmitter.transmit_nec:
+                address: 0xB683
+                command: 0xE31C
+                command_repeats: 1
+        - type: command
+          name: "Surround"
+          command:
+            - remote_transmitter.transmit_nec:
+                address: 0xB683
+                command: 0xE718
+                command_repeats: 1
+        - type: command
+          name: "Dialogue"
+          command:
+            - remote_transmitter.transmit_nec:
+                address: 0xB683
+                command: 0xE817
+                command_repeats: 1
     - name: Settings Screen
       show_version: True
       entities:
