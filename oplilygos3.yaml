@@ -72,49 +72,33 @@ external_components:
       ref: v0.1
     refresh: 0s
     components: [tdisplays3]
-  - source: github://pr#5254 # used to load fonts on compile
-  # - source:
-  #     type: local
-  #     path: ../compile-online-image/esphome/components/
-    components: [ font ]
-    refresh: 0s
   - source: github://pr#4710
     components: [ online_image ]
 
 packages:
+  # common
+  device_base: github://landonr/homeThing/common/device_base.yaml
+  fonts: github://landonr/homeThing/common/fonts.yaml
+  icon_fonts: github://landonr/homeThing/common/icon_fonts.yaml
+  settings: github://landonr/homeThing/common/settings.yaml
+  images: github://landonr/homeThing/common/images.yaml
+  nowPlayingImage: github://landonr/homeThing/common/nowPlayingImage.yaml
+  voice_assistant: github://landonr/homeThing/common/voice_assistant.yaml
+
+  # ipod
+  battery: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
+  sleep: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
+  rotary: github://landonr/homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
+
+  #tdisplay s3
+  backlight: github://landonr/homeThing/common/tdisplay-s3/backlight.yaml
+  binary_sensors: github://landonr/homeThing/common/tdisplay-s3/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
+  
+  # home
   home_media_player: !include homeConfig/media_player.yaml
   home_switch: !include homeConfig/switch.yaml
   plant_text_sensors: !include homeConfig/text_sensor_plants.yaml
   weather: !include homeConfig/weather.yaml
-  # logger: !include ../homeThing/common/logger.yaml
-  # device_base: !include ../homeThing/common/device_base.yaml
-  # fonts: !include ../homeThing/common/fonts.yaml
-  # icon_fonts: !include ../homeThing/common/icon_fonts.yaml
-  # ipod_control_binary_sensor: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor.yaml
-  # ipod_control_binary_sensor_pcf: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml
-  # ipod_control_rotary: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_rotary.yaml
-  # ipod_control_battery: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_battery.yaml
-  # ipod_control_sleep: !include ../homeThing/common/ipod/lilygo_tdisplay_ipod_sleep.yaml
-  # s3_backlight: !include ../homeThing/common/tdisplay-s3/backlight.yaml
-  # settings: !include ../homeThing/common/settings.yaml
-  remote_package:
-    url: https://github.com/landonr/homeThing
-    ref: main
-    files: [
-      common/device_base.yaml, # defines api, ota, free memory and uptime sensor
-      common/fonts.yaml, # default font
-      common/icon_fonts.yaml, # material icons
-      common/ipod/lilygo_tdisplay_ipod_battery.yaml, # used for battery percent
-      common/ipod/lilygo_tdisplay_ipod_binary_sensor_pcf.yaml, # used for button controls
-      common/ipod/lilygo_tdisplay_ipod_rotary.yaml, # used for rotary controls
-      common/ipod/lilygo_tdisplay_ipod_sleep.yaml, # required for device to sleep
-      common/tdisplay-s3/backlight.yaml, # backlight
-      common/settings.yaml, # settings screen
-      common/nowPlayingImage.yaml, # settings screen
-      common/logger.yaml, # logger
-      # common/images.yaml # boot screen image
-    ]
-    refresh: 0s
 
 substitutions:
   friendly_name: "s3 proto"
