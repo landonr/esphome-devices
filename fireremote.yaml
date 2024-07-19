@@ -111,7 +111,7 @@ packages:
     refresh: 0s
 
 substitutions:
-  friendly_name: "homeThingFireRemote"
+  friendly_name: "homeThingFire"
   large_heavy_font_size: "24"
   large_font_size: "24"
   medium_font_size: "20"
@@ -164,42 +164,42 @@ homeThingDisplayState:
   draw_battery_level: true
   draw_volume_level: false
   draw_header_time: true
-  dark_mode: dark_mode
+  # dark_mode: dark_mode
 
-homeThingAppSnake:
-  id: snake
-  display: my_display
-  display_state: display_state_id
+# homeThingAppSnake:
+#   id: snake
+#   display: my_display
+#   display_state: display_state_id
 
-homeThingAppBreakout:
-  id: breakout
-  display: my_display
-  display_state: display_state_id
+# homeThingAppBreakout:
+#   id: breakout
+#   display: my_display
+#   display_state: display_state_id
 
-homeThingAppWeather:
-  id: weather
-  display: my_display
-  display_state: display_state_id
-  temperature_sensor: weather_temperature
-  humidity_sensor: weather_humidity
-  condition_sensor: weather_state
-  images:
-    cloudy: weather_cloudy
-    fog: weather_fog
-    snow: weather_snow
-    sunny: weather_sunny
-    rainy: weather_rainy
-    night: weather_night
+# homeThingAppWeather:
+#   id: weather
+#   display: my_display
+#   display_state: display_state_id
+#   temperature_sensor: weather_temperature
+#   humidity_sensor: weather_humidity
+#   condition_sensor: weather_state
+#   images:
+#     cloudy: weather_cloudy
+#     fog: weather_fog
+#     snow: weather_snow
+#     sunny: weather_sunny
+#     rainy: weather_rainy
+#     night: weather_night
 
 light:
-  - platform: homeassistant_component
-    id: light_desk_lamp
-    entity_id: light.desk_lamp
-    name: Desk Lamp
-  - platform: homeassistant_component
-    id: light_rgb_lights
-    entity_id: light.rgb_lights
-    name: Color Lights 
+#   - platform: homeassistant_component
+#     id: light_desk_lamp
+#     entity_id: light.desk_lamp
+#     name: Desk Lamp
+#   - platform: homeassistant_component
+#     id: light_rgb_lights
+#     entity_id: light.rgb_lights
+#     name: Color Lights 
   - platform: esp32_rmt_led_strip
     rgb_order: GRB
     pin: GPIO15
@@ -239,7 +239,20 @@ light:
           move_interval: 100ms
           scan_width: 1
 
+number:
+  - platform: homeassistant_component
+    entity_id: number.catfeeder_node_max_servings_per_day
+    name: cat max servings
+    id: cat_max_servings
+    min_value: 7
+    max_value: 15
+    step: 1
+
 sensor:
+  - platform: homeassistant
+    entity_id: sensor.spin_count_for_treat
+    name: "Spins for Treat"
+    id: spin_count_for_treat
   - platform: pulse_meter
     pin: 
       number: GPIO26
@@ -251,11 +264,12 @@ sensor:
     unit_of_measurement: 'RPM'
     name: "${friendly_name} Wheel RPM"
     id: wheel_rpm
-    internal_filter: 500ms
     filters:
       - filter_out: NaN
-      - multiply: 6 # Convert pulses per minute to RPM
-      - throttle_average: 10s
+      - multiply: 0.5
+      - timeout:
+          timeout: 10s
+          value: 0
     total:
       unit_of_measurement: 'Revolutions Today'
       id: total_rpm
@@ -266,19 +280,18 @@ sensor:
               id: minute_rpm
               state: !lambda |-
                 if (id(minute_rpm).has_state() && id(minute_rpm).state > 0.0) {
-                  return id(minute_rpm).state + 1.0;
+                  return id(minute_rpm).state + 0.5;
                 }
-                return 1.0;
-  - platform: total_daily_energy
-    name: "${friendly_name} Total Daily RPM"
-    power_id: wheel_rpm
-    id: daily_rpm
-    unit_of_measurement: 'Revolutions'
+                return 0.5;
   - platform: template
-    name: "${friendly_name} Current Minute RPM"
+    name: "${friendly_name} Spins"
     # power_id: total_rpm
     id: minute_rpm
     unit_of_measurement: 'Revolutions'
+    on_value: 
+      then:
+        - lambda: |-
+            id(homeThingMenu)->buttonPressWakeUpDisplay();
     filters:
       - timeout:
           timeout: 15s
@@ -288,11 +301,13 @@ homeThing:
   id: homeThingMenu
   header:
     time_id: esptime
+  display: my_display
+  display_state: display_state_id
   apps: 
     - now_playing
-    - snake
-    - breakout
-    - weather
+    # - snake
+    # - breakout
+    # - weather
   settings:
     mode: rotary
     display_timeout_while_charging: 30
@@ -304,18 +319,20 @@ homeThing:
     api_connected: api_connected
     media_players_loaded: media_players_loaded_sensor
     launch_image: launch_image
-  display: my_display
-  display_state: display_state_id
   on_redraw:
     then:
       component.update: my_display
   home_screen:
     name: Fire!
     entities:
-        - id: wheel_rpm
+        - id: minute_rpm
           type: sensor
-        - id: daily_rpm
+        - id: spin_count_for_treat
           type: sensor
+        - type: text_sensor
+          id: servings_today
+        - type: text_sensor
+          id: last_feed
         - type: command
           name: "feed lil freak"
           command:
@@ -345,42 +362,42 @@ homeThing:
             - light.turn_off:
                 id: side_light
         - type: text_sensor
-          id: servings_today
-        - type: text_sensor
           id: servings_total
-        - type: text_sensor
-          id: last_feed
+        - type: number
+          id: cat_max_servings
   screens:
-    - name: Lights Screen
-      entities:
-        - id: light_rgb_lights
-          type: light
-        - id: light_desk_lamp
-          type: light
-        # - id: strip_light
-        #   type: light
-        - id: side_light
-          type: light
-        - type: command
-          name: "color lights"
-          command:
-            - homeassistant.service:
-                service: script.colors
-        - type: command
-          name: "hell lights"
-          command:
-            - homeassistant.service:
-                service: scene.turn_on
-                data:
-                  entity_id: "scene.hell"
-        - type: command
-          name: "lights off"
-          command:
-            - homeassistant.service:
-                service: script.off_script
+  #   - name: Lights Screen
+  #     entities:
+  #       - id: light_rgb_lights
+  #         type: light
+  #       - id: light_desk_lamp
+  #         type: light
+  #       # - id: strip_light
+  #       #   type: light
+  #       - id: side_light
+  #         type: light
+  #       - type: command
+  #         name: "color lights"
+  #         command:
+  #           - homeassistant.service:
+  #               service: script.colors
+  #       - type: command
+  #         name: "hell lights"
+  #         command:
+  #           - homeassistant.service:
+  #               service: scene.turn_on
+  #               data:
+  #                 entity_id: "scene.hell"
+  #       - type: command
+  #         name: "lights off"
+  #         command:
+  #           - homeassistant.service:
+  #               service: script.off_script
     - name: Settings Screen
       show_version: True
       entities:
+        - type: number
+          id: cat_max_servings
         - id: dark_mode
           type: switch
         - id: side_light
