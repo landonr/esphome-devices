@@ -26,6 +26,7 @@ web_server:
 
 ota:
   password: "c77a50f9d929caf56146ed0e31b0d93b"
+  platform: esphome
 
 wifi:
   ssid: !secret wifi_ssid
@@ -34,10 +35,9 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Catfeeder-Node Fallback Hotspot"
-    password: "ivU9AzL8H1pF"
+    password: !secret wifi_fallback_password
 
 captive_portal:
-  
  
 output:
   - platform: ledc
@@ -224,6 +224,7 @@ number:
 
 script:
   - id: feed_script
+    mode: restart
     parameters:
       servings_current: int
       force: bool
@@ -289,7 +290,7 @@ script:
                             state: !lambda |-
                               auto timeSting = id(sntp_time).now().strftime("%c");
                               return timeSting;
-                        - delay: 1s
+                        - delay: 300s
             - number.to_min: active_servings
       - if:
           condition:
@@ -369,7 +370,7 @@ time:
           - number.to_min: bonus_treats_internal
   - platform: sntp
     on_time:
-      - hours: 4,7,17
+      - hours: 7,16,21
         seconds: 0
         minutes: 0
         then:
@@ -385,13 +386,13 @@ text_sensor:
   - platform: template
     name: "Feed schedule"
     lambda: !lambda |-
-      return {"06:00, 16:00, 19:00"};
+      return {"07:00, 16:00, 21:00"};
   - platform: template
     name: "Next feed"
     update_interval: 1s
     lambda: !lambda |-
       int current_hour = id(sntp_time).now().hour;
-      std::vector<int> ordered_list = {6, 16, 19};
+      std::vector<int> ordered_list = {7, 16, 21};
       bool skip_next_higher = id(skip_next_meal).state;
 
       int next_hour = 0;
