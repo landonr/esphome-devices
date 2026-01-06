@@ -84,14 +84,15 @@ switch:
   - platform: restart
     name: "Cat Feeder Restart"
   - platform: template
+    name: "Cat Feeder Test Mode"
+    id: cat_feeder_test_mode
+    optimistic: True
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
     name: "Skip Next Meal"
     id: skip_next_meal
     optimistic: True
     restore_mode: RESTORE_DEFAULT_OFF
-  - platform: template
-    name: "Calculate servings by refill"
-    id: calculate_by_refill
-    optimistic: True
 
 number:
   - platform: template
@@ -103,57 +104,6 @@ number:
     restore_value: True
     initial_value: 12
     step: 1
-  - platform: template
-    name: "Grams per day"
-    id: grams_per_day
-    optimistic: true
-    min_value: 60
-    max_value: 130
-    restore_value: True
-    initial_value: 115
-    step: 5
-    device_class: "weight"
-  - platform: template
-    name: "Grams per serving"
-    id: grams_per_serving
-    optimistic: true
-    min_value: 5
-    max_value: 20
-    restore_value: True
-    initial_value: 7
-    step: 0.1
-    device_class: "weight"
-  - platform: template
-    name: "Refill size"
-    id: refill_size
-    optimistic: true
-    min_value: 0
-    max_value: 4000
-    restore_value: False
-    initial_value: 0
-    step: 10
-    device_class: "weight"
-  - platform: template
-    name: "Grams per serving (Calculated)"
-    id: grams_per_serving_calculated
-    optimistic: true
-    internal: True
-    min_value: 0
-    max_value: 100
-    restore_value: True
-    initial_value: 0
-    step: 0.1
-    device_class: "weight"
-  - platform: template
-    name: "Last Refill size"
-    id: last_refill_size
-    optimistic: true
-    internal: True
-    min_value: 0
-    max_value: 4000
-    restore_value: True
-    step: 10
-    device_class: "weight"
   - platform: template
     name: "Servings today"
     id: servings_today
@@ -168,21 +118,6 @@ number:
       then:
       - sensor.template.publish:
           id: servings_today_sensor
-          state: !lambda 'return x;'
-  - platform: template
-    name: "Servings since refill"
-    id: servings_since_refill
-    optimistic: true
-    min_value: 0
-    max_value: 1000
-    restore_value: True
-    initial_value: 0
-    step: 1
-    internal: True
-    on_value:
-      then:
-      - sensor.template.publish:
-          id: servings_since_refill_sensor
           state: !lambda 'return x;'
   - platform: template
     name: "Servings total"
@@ -206,7 +141,6 @@ number:
     min_value: 0
     max_value: 10
     step: 1
-    internal: true
     on_value:
       then:
       - sensor.template.publish:
@@ -221,6 +155,122 @@ number:
     restore_value: True
     step: 1
     internal: true
+  - platform: template
+    name: "Feed Schedule 1 Time (min)"
+    id: feed_schedule_1_time_min
+    optimistic: true
+    min_value: 0
+    max_value: 1440
+    step: 1
+    restore_value: True
+    initial_value: 420
+  - platform: template
+    name: "Feed Schedule 1 Amount (servings)"
+    id: feed_schedule_1_amount
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: True
+    initial_value: 5
+  - platform: template
+    name: "Feed Schedule 2 Time (min)"
+    id: feed_schedule_2_time_min
+    optimistic: true
+    min_value: 0
+    max_value: 1440
+    step: 1
+    restore_value: True
+    initial_value: 960
+  - platform: template
+    name: "Feed Schedule 2 Amount (servings)"
+    id: feed_schedule_2_amount
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: True
+    initial_value: 5
+  - platform: template
+    name: "Feed Schedule 3 Time (min)"
+    id: feed_schedule_3_time_min
+    optimistic: true
+    min_value: 0
+    max_value: 1440
+    step: 1
+    restore_value: True
+    initial_value: 1260
+  - platform: template
+    name: "Feed Schedule 3 Amount (servings)"
+    id: feed_schedule_3_amount
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: True
+    initial_value: 5
+  - platform: template
+    name: "Feed Schedule 4 Time (min)"
+    id: feed_schedule_4_time_min
+    optimistic: true
+    min_value: 0
+    max_value: 1440
+    step: 1
+    restore_value: True
+    initial_value: 0
+  - platform: template
+    name: "Feed Schedule 4 Amount (servings)"
+    id: feed_schedule_4_amount
+    optimistic: true
+    min_value: 0
+    max_value: 10
+    step: 1
+    restore_value: True
+    initial_value: 0
+
+globals:
+  - id: daily_reset_last_day
+    type: int
+    restore_value: yes
+    initial_value: '-1'
+  - id: scheduler_last_minute
+    type: int
+    restore_value: no
+    initial_value: '-1'
+
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          auto now = id(sntp_time).now();
+          if (!now.is_valid()) return;
+
+          const int current_min = now.hour * 60 + now.minute;
+          const int day_key = now.year * 10000 + now.month * 100 + now.day_of_month;
+
+          // Daily reset (whenever we notice the day changed)
+          if (id(daily_reset_last_day) != day_key) {
+            id(daily_reset_last_day) = day_key;
+            id(servings_today).publish_state(0);
+            id(bonus_treats_internal).publish_state(0);
+          }
+
+          // Only evaluate schedules once per minute (even though this runs every 10s)
+          if (id(scheduler_last_minute) == current_min) return;
+          id(scheduler_last_minute) = current_min;
+
+          auto maybe_run = [&](int time_min, int amount) {
+            if (amount <= 0) return;
+            if (time_min < 0 || time_min > 1440) return;
+            const int normalized_time = (time_min >= 1440) ? 0 : time_min;
+            if (normalized_time != current_min) return;
+            id(feed_script).execute(amount, false);
+          };
+
+          maybe_run((int) id(feed_schedule_1_time_min).state, (int) id(feed_schedule_1_amount).state);
+          maybe_run((int) id(feed_schedule_2_time_min).state, (int) id(feed_schedule_2_amount).state);
+          maybe_run((int) id(feed_schedule_3_time_min).state, (int) id(feed_schedule_3_amount).state);
+          maybe_run((int) id(feed_schedule_4_time_min).state, (int) id(feed_schedule_4_amount).state);
 
 script:
   - id: feed_script
@@ -229,6 +279,28 @@ script:
       servings_current: int
       force: bool
     then:
+      - if:
+          condition:
+            switch.is_on: cat_feeder_test_mode
+          then:
+            - logger.log:
+                format: "TEST MODE: would feed %d servings (force=%d)"
+                args: [ 'servings_current', 'force' ]
+                level: INFO
+            - text_sensor.template.publish:
+                id: last_feed
+                state: !lambda |-
+                  auto timeSting = id(sntp_time).now().strftime("%c");
+                  return std::string("TEST MODE @ ") + timeSting;
+            - if:
+                condition:
+                  lambda: !lambda return !force;
+                then:
+                  - logger.log: "TEST MODE: resetting skip next meal"
+                  - switch.template.publish:
+                      id: skip_next_meal
+                      state: OFF
+            - script.stop: feed_script
       - if:
           condition:
             - or:
@@ -247,7 +319,7 @@ script:
                 then:
                   - if:
                       condition:
-                        - lambda: !lambda return int(id(servings_today).state) > int(id(max_servings_per_day).state);
+                        - lambda: !lambda return int(id(servings_today).state) >= int(id(max_servings_per_day).state);
                       then:
                         - logger.log:
                             format: "Max servigns reached= %f"
@@ -257,7 +329,7 @@ script:
                       else:
                         - logger.log:
                             format: "Feeding meal active= %f, total= %f, skip=%d, max=%f, today=%f"
-                            args: [ 'id(active_servings).state', 'id(servings).state', 'id(skip_next_meal).state', 'id(max_servings_per_day).state', 'id(servings_today).state']
+                            args: [ 'id(active_servings).state', 'id(active_servings).state', 'id(skip_next_meal).state', 'id(max_servings_per_day).state', 'id(servings_today).state']
                             level: INFO
                         - sensor.template.publish:
                             id: active_servings_sensor
@@ -282,7 +354,6 @@ script:
                                 binary_sensor.is_off: feed_clicker
                             - fan.turn_off: serving_motor
                         - number.increment: servings_today
-                        - number.increment: servings_since_refill
                         - number.increment: servings_total
                         - number.decrement: active_servings
                         - text_sensor.template.publish:
@@ -302,35 +373,6 @@ script:
               state: OFF
 
 button:
-  - platform: template
-    name: Reset Refill
-    on_press:
-      then:
-        - number.set:
-            id: last_refill_size
-            value: 0
-        - number.set:
-            id: refill_size
-            value: 0
-        - number.set:
-            id: grams_per_serving_calculated
-            value: 0
-  - platform: template
-    name: Save Refill
-    on_press:
-      - if:
-          condition:
-            lambda: 'return id(servings_since_refill).state > 0;'
-          then:
-            - number.set:
-                id: last_refill_size
-                value: !lambda 'return id(refill_size).state;'
-            - number.set:
-                id: grams_per_serving_calculated
-                value: !lambda 'return id(last_refill_size).state / id(servings_since_refill).state;'
-            - number.set:
-                id: servings_since_refill
-                value: !lambda 'return 0;'
   - platform: template
     name: Feed Single
     id: feed_single
@@ -352,7 +394,7 @@ button:
       - script.execute:
           id: feed_script
           force: true
-          servings_current: !lambda 'return id(servings).state;'
+          servings_current: !lambda 'return (int) id(active_servings).state;'
       - switch.template.publish:
           id: skip_next_meal
           state: On
@@ -360,24 +402,6 @@ button:
 time:
   - platform: sntp
     id: sntp_time
-    on_time:
-      # Every morning on weekdays
-      - seconds: 0
-        minutes: 0
-        hours: 0
-        then:
-          - number.to_min: servings_today
-          - number.to_min: bonus_treats_internal
-  - platform: sntp
-    on_time:
-      - hours: 7,16,21
-        seconds: 0
-        minutes: 0
-        then:
-          - script.execute:
-              id: feed_script
-              force: false
-              servings_current: !lambda 'return id(servings).state;'
 
 text_sensor:
   - platform: template
@@ -386,73 +410,97 @@ text_sensor:
   - platform: template
     name: "Feed schedule"
     lambda: !lambda |-
-      return {"07:00, 16:00, 21:00"};
+      auto fmt = [](int min_of_day) -> std::string {
+        if (min_of_day < 0) min_of_day = 0;
+        if (min_of_day > 1440) min_of_day = 1440;
+        if (min_of_day >= 1440) min_of_day = 0;
+        char buf[6];
+        snprintf(buf, sizeof(buf), "%02d:%02d", min_of_day / 60, min_of_day % 60);
+        return std::string(buf);
+      };
+
+      std::string out;
+      auto add = [&](int idx, int time_min, int amount) {
+        if (amount <= 0) return;
+        if (!out.empty()) out += ", ";
+        out += "#" + std::to_string(idx) + " " + fmt(time_min) + " (" + std::to_string(amount) + ")";
+      };
+
+      add(1, (int) id(feed_schedule_1_time_min).state, (int) id(feed_schedule_1_amount).state);
+      add(2, (int) id(feed_schedule_2_time_min).state, (int) id(feed_schedule_2_amount).state);
+      add(3, (int) id(feed_schedule_3_time_min).state, (int) id(feed_schedule_3_amount).state);
+      add(4, (int) id(feed_schedule_4_time_min).state, (int) id(feed_schedule_4_amount).state);
+
+      if (out.empty()) return std::string("(none)");
+      return out;
   - platform: template
     name: "Next feed"
-    update_interval: 1s
+    update_interval: 30s
     lambda: !lambda |-
-      int current_hour = id(sntp_time).now().hour;
-      std::vector<int> ordered_list = {7, 16, 21};
-      bool skip_next_higher = id(skip_next_meal).state;
+      auto now = id(sntp_time).now();
+      if (!now.is_valid()) return std::string("(unknown)");
 
-      int next_hour = 0;
-      bool found = false;
+      const int current_min = now.hour * 60 + now.minute;
+      const bool skip_next = id(skip_next_meal).state;
 
-      for (size_t i = 0; i < ordered_list.size(); i++) {
-          if (ordered_list[i] > current_hour) {
-              if (skip_next_higher) {
-                  if (i + 1 < ordered_list.size()) {
-                      next_hour = ordered_list[i + 1];
-                  } else {
-                      next_hour = ordered_list[0]; // Wrap around to 0
-                  }
-              } else {
-                  next_hour = ordered_list[i];
-              }
-              found = true;
-              break;
-          }
+      struct Schedule {
+        int time_min;
+        int idx;
+      };
+
+      std::vector<Schedule> schedules;
+      auto add = [&](int idx, int time_min, int amount) {
+        if (amount <= 0) return;
+        schedules.push_back({time_min, idx});
+      };
+
+      add(1, (int) id(feed_schedule_1_time_min).state, (int) id(feed_schedule_1_amount).state);
+      add(2, (int) id(feed_schedule_2_time_min).state, (int) id(feed_schedule_2_amount).state);
+      add(3, (int) id(feed_schedule_3_time_min).state, (int) id(feed_schedule_3_amount).state);
+      add(4, (int) id(feed_schedule_4_time_min).state, (int) id(feed_schedule_4_amount).state);
+
+      if (schedules.empty()) return std::string("(none)");
+
+      std::sort(schedules.begin(), schedules.end(), [](const Schedule &a, const Schedule &b) {
+        return a.time_min < b.time_min;
+      });
+
+      int found_index = -1;
+      for (size_t i = 0; i < schedules.size(); i++) {
+        if (schedules[i].time_min > current_min) {
+          found_index = (int) i;
+          break;
+        }
       }
-      if (!found) {
-        // Set next_hour based on some default logic since no higher hour was found
-        // For example, setting it to the first hour in the ordered_list
-        next_hour = ordered_list[0];
+      if (found_index < 0) found_index = 0;
+
+      if (skip_next) {
+        found_index = (found_index + 1) % (int) schedules.size();
       }
-      std::string period = (next_hour >= 12) ? "PM" : "AM";
-      int hour12 = (next_hour > 12) ? next_hour - 12 : next_hour;
-      if (hour12 == 0) {
-          hour12 = 12;
-      }
-      return std::to_string(hour12) + ":00 " + period;
+
+      const int next_min = schedules[found_index].time_min;
+      const int next_idx = schedules[found_index].idx;
+
+      auto fmt12 = [](int min_of_day) -> std::string {
+        if (min_of_day < 0) min_of_day = 0;
+        if (min_of_day > 1440) min_of_day = 1440;
+        if (min_of_day >= 1440) min_of_day = 0;
+        int h = min_of_day / 60;
+        int m = min_of_day % 60;
+        std::string period = (h >= 12) ? "PM" : "AM";
+        int hour12 = (h > 12) ? h - 12 : h;
+        if (hour12 == 0) hour12 = 12;
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d:%02d %s", hour12, m, period.c_str());
+        return std::string(buf);
+      };
+
+      return "S" + std::to_string(next_idx) + " " + fmt12(next_min);
 sensor:
   - platform: template
     name: "Active Servings"
     id: active_servings_sensor
     state_class: "measurement"
-  - platform: template
-    name: "Servings per day"
-    id: servings_per_day
-    state_class: "measurement"
-    update_interval: 1s
-    lambda: !lambda |-
-      return id(grams_per_day).state / id(grams_per_serving).state;
-  - platform: template
-    name: "Servings per day (calculated)"
-    id: servings_per_day_calculated
-    state_class: "measurement"
-    lambda: !lambda |-
-      return id(grams_per_day).state / id(grams_per_serving_calculated).state;
-  - platform: template
-    name: "Servings per meal"
-    id: servings
-    state_class: "measurement"
-    update_interval: 1s
-    lambda: !lambda |-
-      float feed_count = 3;
-      if(id(grams_per_serving_calculated).has_state() && id(grams_per_serving_calculated).state > 0 && id(calculate_by_refill).state) {
-        return floor(id(servings_per_day_calculated).state / feed_count);
-      }
-      return floor(id(servings_per_day).state / feed_count);
   - platform: template
     name: "Servings today"
     id: servings_today_sensor
@@ -461,20 +509,6 @@ sensor:
     id: servings_total_sensor
     name: "Servings total"
     state_class: "total"
-  - platform: template
-    id: servings_since_refill_sensor
-    name: "Servings Since Refill"
-    state_class: "total_increasing"
-  - platform: template
-    id: last_refill_size_sensor
-    name: "Last refill size"
-    lambda: !lambda |-
-      return id(last_refill_size).state;
-  - platform: template
-    id: grams_per_serving_calculated_sensor
-    name: "Grams per Serving (Calculated)"
-    lambda: !lambda |-
-      return id(grams_per_serving_calculated).state;
   - platform: template
     name: "Bonus treats today"
     id: bonus_treats
