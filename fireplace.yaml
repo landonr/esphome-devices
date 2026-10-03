@@ -1,0 +1,130 @@
+esphome:
+  name: fireplace-controller
+  friendly_name: Fireplace Controller
+
+esp32:
+  board: seeed_xiao_esp32c6
+  variant: esp32c6
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Fireplace Fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+web_server:
+
+spi:
+  clk_pin: GPIO19
+  miso_pin: GPIO20
+  mosi_pin: GPIO18
+
+cc1101:
+  id: cc1101_comp
+  cs_pin: GPIO0
+  frequency: 315000000
+  filter_bandwidth: 325000
+
+remote_receiver:
+  pin: GPIO2
+  dump: raw
+  tolerance: 50%
+  filter: 50us
+  idle: 10ms
+  buffer_size: 2048b
+  on_raw:
+    then:
+      - lambda: |-
+          // Check for preamble (~5000us pulse)
+          if (x.size() < 40 || x[0] < 4000 || x[0] > 6000)
+            return;
+          // Distinguish ON vs OFF by pulse at index 10
+          // ON: x[10] ~1000 (long), OFF: x[10] ~500 (short)
+          bool is_on = x[10] > 700;
+          id(fireplace_is_on) = is_on;
+          id(state_confirmed) = true;
+          id(sync_sensor).publish_state(true);
+          ESP_LOGI("remote", "Detected remote %s signal", is_on ? "ON" : "OFF");
+
+remote_transmitter:
+  pin: GPIO1
+  carrier_duty_percent: 100%
+  on_transmit:
+    then:
+      - cc1101.begin_tx
+  on_complete:
+    then:
+      - cc1101.begin_rx
+
+globals:
+  - id: fireplace_is_on
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: state_confirmed
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+switch:
+  - platform: template
+    name: "Fireplace"
+    id: fireplace_switch
+    icon: "mdi:fireplace"
+    restore_mode: DISABLED
+    lambda: 'return id(fireplace_is_on);'
+    turn_on_action:
+      - globals.set:
+          id: fireplace_is_on
+          value: 'true'
+      - globals.set:
+          id: state_confirmed
+          value: 'false'
+      - lambda: 'id(sync_sensor).publish_state(false);'
+      - repeat:
+          count: 3
+          then:
+            - repeat:
+                count: 16
+                then:
+                  - remote_transmitter.transmit_raw:
+                      code: [5090, -949, 535, -1018, 1017, -523, 535, -1020, 1016, -521, 1018, -521, 509, -1045, 1017, -521, 514, -1048, 1009, -510, 540, -1018, 534, -1017, 539, -1013, 539, -1033, 1013, -515, 1016, -522, 516, -1047, 510, -1044, 521, -1042, 503, -1047, 514, -1024, 1024, -521, 524, -1024, 539, -1024, 1034]
+            - delay: 500ms
+    turn_off_action:
+      - globals.set:
+          id: fireplace_is_on
+          value: 'false'
+      - globals.set:
+          id: state_confirmed
+          value: 'false'
+      - lambda: 'id(sync_sensor).publish_state(false);'
+      - repeat:
+          count: 3
+          then:
+            - repeat:
+                count: 16
+                then:
+                  - remote_transmitter.transmit_raw:
+                      code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
+            - delay: 500ms
+
+binary_sensor:
+  - platform: template
+    name: "Fireplace State Synced"
+    id: sync_sensor
+    icon: "mdi:sync"
+    lambda: 'return id(state_confirmed);'
