@@ -98,11 +98,8 @@ switch:
       - repeat:
           count: 3
           then:
-            - repeat:
-                count: 16
-                then:
-                  - remote_transmitter.transmit_raw:
-                      code: [5090, -949, 535, -1018, 1017, -523, 535, -1020, 1016, -521, 1018, -521, 509, -1045, 1017, -521, 514, -1048, 1009, -510, 540, -1018, 534, -1017, 539, -1013, 539, -1033, 1013, -515, 1016, -522, 516, -1047, 510, -1044, 521, -1042, 503, -1047, 514, -1024, 1024, -521, 524, -1024, 539, -1024, 1034]
+            - script.execute: fireplace_on_burst
+            - script.wait: fireplace_on_burst
             - delay: 500ms
     turn_off_action:
       - globals.set:
@@ -115,11 +112,8 @@ switch:
       - repeat:
           count: 3
           then:
-            - repeat:
-                count: 16
-                then:
-                  - remote_transmitter.transmit_raw:
-                      code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
+            - script.execute: fireplace_off_burst
+            - script.wait: fireplace_off_burst
             - delay: 500ms
 
 binary_sensor:
@@ -128,3 +122,21 @@ binary_sensor:
     id: sync_sensor
     icon: "mdi:sync"
     lambda: 'return id(state_confirmed);'
+
+# Bursts live in scripts because a repeat nested in a repeat redefines
+# `iteration` and fails to compile.
+script:
+  - id: fireplace_on_burst
+    then:
+      - repeat:
+          count: 16
+          then:
+            - remote_transmitter.transmit_raw:
+                code: [5090, -949, 535, -1018, 1017, -523, 535, -1020, 1016, -521, 1018, -521, 509, -1045, 1017, -521, 514, -1048, 1009, -510, 540, -1018, 534, -1017, 539, -1013, 539, -1033, 1013, -515, 1016, -522, 516, -1047, 510, -1044, 521, -1042, 503, -1047, 514, -1024, 1024, -521, 524, -1024, 539, -1024, 1034]
+  - id: fireplace_off_burst
+    then:
+      - repeat:
+          count: 16
+          then:
+            - remote_transmitter.transmit_raw:
+                code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
