@@ -1,6 +1,17 @@
 esphome:
   name: fireplace-controller
   friendly_name: Fireplace Controller
+  on_boot:
+    # XIAO ESP32-C6 RF switch: GPIO3 LOW powers it, GPIO14 HIGH selects the
+    # external u.FL antenna. Full-power Zigbee on the onboard ceramic antenna
+    # resets the board. Runs after the outputs' own setup (800), before Zigbee (600).
+    - priority: 700
+      then:
+        - output.turn_off: rf_switch_power
+        - output.turn_on: antenna_select
+    - priority: -100
+      then:
+        - script.execute: wifi_window
 
 esp32:
   board: seeed_xiao_esp32c6
@@ -8,25 +19,134 @@ esp32:
   framework:
     type: esp-idf
 
+external_components:
+  - source: github://luar123/zigbee_esphome@6cb5480cd2499faf9afb825754fa46b084296cb8
+    components: [zigbee]
+
 logger:
   level: DEBUG
-
-api:
 
 ota:
   - platform: esphome
     password: !secret ota_password
+    on_begin:
+      - script.stop: wifi_window
+    on_error:
+      - script.execute: wifi_window
+    on_abort:
+      - script.execute: wifi_window
 
+# WiFi is only for OTA: up for 5 minutes after boot or after the Zigbee WiFi
+# switch turns on. A Zigbee WiFi AP is not allowed, so there is no fallback hotspot.
 wifi:
+  id: wifi_comp
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  ap:
-    ssid: "Fireplace Fallback"
-    password: !secret ap_password
+  reboot_timeout: 0s
+  # Zigbee coexistence needs modem power save, or the STA connection flaps.
+  power_save_mode: light
 
-captive_portal:
+script:
+  - id: wifi_window
+    mode: restart
+    then:
+      - wifi.enable:
+      - delay: 5min
+      - wifi.disable:
+  # Bursts live in scripts because a repeat nested in a repeat redefines
+  # `iteration` and fails to compile.
+  - id: fireplace_on_burst
+    then:
+      - repeat:
+          count: 16
+          then:
+            - remote_transmitter.transmit_raw:
+                code: [5090, -949, 535, -1018, 1017, -523, 535, -1020, 1016, -521, 1018, -521, 509, -1045, 1017, -521, 514, -1048, 1009, -510, 540, -1018, 534, -1017, 539, -1013, 539, -1033, 1013, -515, 1016, -522, 516, -1047, 510, -1044, 521, -1042, 503, -1047, 514, -1024, 1024, -521, 524, -1024, 539, -1024, 1034]
+  - id: fireplace_off_burst
+    then:
+      - repeat:
+          count: 16
+          then:
+            - remote_transmitter.transmit_raw:
+                code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
 
 web_server:
+
+output:
+  - platform: gpio
+    pin: GPIO3
+    id: rf_switch_power
+  - platform: gpio
+    pin: GPIO14
+    id: antenna_select
+
+zigbee:
+  id: zb
+  name: fireplace-controller
+  manufacturer: esphome
+  power_supply: 1
+  router: false
+  on_join:
+    then:
+      - zigbee.setAttr:
+          id: fireplace_attr
+          value: !lambda 'return id(fireplace_switch).state;'
+      - zigbee.setAttr:
+          id: wifi_attr
+          value: !lambda 'return id(wifi_switch).state;'
+  endpoints:
+    - num: 1
+      device_type: ON_OFF_OUTPUT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            # Not `device:`: the stack sets OnOff to false while starting, which
+            # would fire the OFF burst and disable WiFi on every boot.
+            - attribute_id: 0
+              id: fireplace_attr
+              type: BOOL
+              report: true
+              on_value:
+                then:
+                  - if:
+                      condition:
+                        lambda: 'return (id(zb)->is_connected() || (id(zb)->is_started() && !id(zb)->factory_new_)) && x != id(fireplace_switch).state;'
+                      then:
+                        - switch.control:
+                            id: fireplace_switch
+                            state: !lambda 'return x;'
+    - num: 2
+      device_type: ON_OFF_OUTPUT
+      clusters:
+        - id: ON_OFF
+          attributes:
+            # Only "on" is acted on; the window closes itself.
+            - attribute_id: 0
+              id: wifi_attr
+              type: BOOL
+              report: true
+              on_value:
+                then:
+                  - if:
+                      condition:
+                        lambda: 'return (id(zb)->is_connected() || (id(zb)->is_started() && !id(zb)->factory_new_)) && x;'
+                      then:
+                        - switch.turn_on: wifi_switch
+    - num: 3
+      device_type: SIMPLE_SENSOR
+      clusters:
+        - id: BINARY_INPUT
+          attributes:
+            - attribute_id: 0x55
+              type: BOOL
+              report: true
+              device: sync_sensor
+            - attribute_id: 0x51
+              type: BOOL
+              value: false
+            - attribute_id: 0x6F
+              type: MAP8
+              value: 0
 
 spi:
   clk_pin: GPIO19
@@ -82,11 +202,39 @@ globals:
 
 switch:
   - platform: template
+    name: "WiFi"
+    id: wifi_switch
+    icon: "mdi:wifi"
+    restore_mode: DISABLED
+    lambda: 'return !id(wifi_comp)->is_disabled();'
+    turn_on_action:
+      - script.execute: wifi_window
+    turn_off_action:
+      - script.stop: wifi_window
+      - wifi.disable:
+    on_turn_on:
+      - zigbee.setAttr:
+          id: wifi_attr
+          value: true
+    on_turn_off:
+      - zigbee.setAttr:
+          id: wifi_attr
+          value: false
+
+  - platform: template
     name: "Fireplace"
     id: fireplace_switch
     icon: "mdi:fireplace"
     restore_mode: DISABLED
     lambda: 'return id(fireplace_is_on);'
+    on_turn_on:
+      - zigbee.setAttr:
+          id: fireplace_attr
+          value: true
+    on_turn_off:
+      - zigbee.setAttr:
+          id: fireplace_attr
+          value: false
     turn_on_action:
       - globals.set:
           id: fireplace_is_on
@@ -122,21 +270,3 @@ binary_sensor:
     id: sync_sensor
     icon: "mdi:sync"
     lambda: 'return id(state_confirmed);'
-
-# Bursts live in scripts because a repeat nested in a repeat redefines
-# `iteration` and fails to compile.
-script:
-  - id: fireplace_on_burst
-    then:
-      - repeat:
-          count: 16
-          then:
-            - remote_transmitter.transmit_raw:
-                code: [5090, -949, 535, -1018, 1017, -523, 535, -1020, 1016, -521, 1018, -521, 509, -1045, 1017, -521, 514, -1048, 1009, -510, 540, -1018, 534, -1017, 539, -1013, 539, -1033, 1013, -515, 1016, -522, 516, -1047, 510, -1044, 521, -1042, 503, -1047, 514, -1024, 1024, -521, 524, -1024, 539, -1024, 1034]
-  - id: fireplace_off_burst
-    then:
-      - repeat:
-          count: 16
-          then:
-            - remote_transmitter.transmit_raw:
-                code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
