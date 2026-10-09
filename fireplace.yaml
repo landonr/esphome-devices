@@ -69,6 +69,20 @@ script:
           then:
             - remote_transmitter.transmit_raw:
                 code: [5059, -1018, 485, -1068, 1000, -532, 493, -1065, 987, -545, 493, -1052, 1012, -516, 511, -1038, 1017, -518, 1039, -492, 529, -1034, 518, -1041, 522, -1021, 536, -1024, 1033, -499, 1037, -515, 515, -1041, 523, -1019, 537, -1017, 542, -1024, 521, -1045, 1017, -518, 513, -1025, 529, -1034, 1017]
+  # The fireplace gives no feedback, so resend OFF in case it missed the first
+  # bursts: 15 s, 1 min and 5 min apart.
+  - id: off_followup
+    mode: restart
+    then:
+      - repeat:
+          count: 3
+          then:
+            - delay: !lambda 'return iteration == 0 ? 15000 : iteration == 1 ? 60000 : 300000;'
+            - if:
+                condition:
+                  lambda: 'return !id(fireplace_is_on);'
+                then:
+                  - script.execute: fireplace_off_burst
 
 web_server:
 
@@ -100,8 +114,10 @@ zigbee:
       clusters:
         - id: ON_OFF
           attributes:
-            # Not `device:`: the stack sets OnOff to false while starting, which
-            # would fire the OFF burst and disable WiFi on every boot.
+            # Not `device:`: the stack sets OnOff to false while starting, so
+            # writes in the first 15 s are ignored. After that every command
+            # transmits, even one matching the current state, so a repeated OFF
+            # from HA can still turn off a fireplace that missed the first one.
             - attribute_id: 0
               id: fireplace_attr
               type: BOOL
@@ -110,7 +126,7 @@ zigbee:
                 then:
                   - if:
                       condition:
-                        lambda: 'return (id(zb)->is_connected() || (id(zb)->is_started() && !id(zb)->factory_new_)) && x != id(fireplace_switch).state;'
+                        lambda: 'return millis() > 15000 && id(zb)->is_connected();'
                       then:
                         - switch.control:
                             id: fireplace_switch
@@ -191,9 +207,10 @@ remote_transmitter:
       - cc1101.begin_rx
 
 globals:
+  # Restored so a reboot doesn't report OFF to HA while the fire is still on.
   - id: fireplace_is_on
     type: bool
-    restore_value: no
+    restore_value: yes
     initial_value: 'false'
   - id: state_confirmed
     type: bool
@@ -236,6 +253,7 @@ switch:
           id: fireplace_attr
           value: false
     turn_on_action:
+      - script.stop: off_followup
       - globals.set:
           id: fireplace_is_on
           value: 'true'
@@ -263,6 +281,7 @@ switch:
             - script.execute: fireplace_off_burst
             - script.wait: fireplace_off_burst
             - delay: 500ms
+      - script.execute: off_followup
 
 binary_sensor:
   - platform: template
